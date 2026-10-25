@@ -4,384 +4,530 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Mail-Express Punctuality</title>
+<title>Mail-Express Punctuality Dashboard</title>
 <style>
-  :root {
+  /* ---------- Themes ---------- */
+  :root, [data-skin="navy"] {
     color-scheme: light;
-    --bg: #f4f3f0;
-    --surface: #fcfcfb;
-    --border: #e3e1dc;
-    --grid: #ebe9e4;
-    --text-primary: #0b0b0b;
-    --text-secondary: #52514e;
-    --text-muted: #7a7974;
-    --cy: #2a78d6;          /* this year */
-    --ly: #a3a19b;          /* last year (comparison, recessive) */
-    --good: #008300;
-    --bad: #c8332f;
-    --warn-bg: #fff4dc;
-    --warn-ink: #7a5200;
-    --radius: 10px;
+    --page: linear-gradient(160deg, #e8eef6 0%, #dde6f1 55%, #e9eef5 100%);
+    --header: linear-gradient(100deg, #0d2747 0%, #164277 100%);
+    --header-ink: #ffffff; --header-sub: #b9cbe3;
+    --accent: #1f6fd1; --accent-ink: #ffffff;
+    --card: #ffffff; --card-head: #f5f8fc;
+    --ink: #0e1726; --ink-2: #44526a; --muted: #75839a;
+    --border: #d6dfeb; --grid: #e9eef4;
+    --shadow: 0 1px 2px rgba(16,39,71,.06), 0 6px 18px rgba(16,39,71,.07);
+    --cy: #2a78d6; --ly: #d55181; --up: #0a8a3a; --down: #d13b3b;
+    --banner-bg: #fff3d6; --banner-ink: #6e4b00;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:where(:not([data-theme="light"])) {
-      color-scheme: dark;
-      --bg: #121211; --surface: #1a1a19; --border: #2c2c2a; --grid: #262624;
-      --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e88;
-      --cy: #3987e5; --ly: #6d6c67; --good: #3aa53a; --bad: #e66767;
-      --warn-bg: #3a2f14; --warn-ink: #f0c879;
-    }
+  [data-skin="classic"] {
+    color-scheme: light;
+    --page: linear-gradient(160deg, #e7e8de 0%, #dcdfd0 100%);
+    --header: linear-gradient(100deg, #36452b 0%, #546b3f 100%);
+    --header-ink: #ffffff; --header-sub: #d6e0c6;
+    --accent: #4f7232; --accent-ink: #ffffff;
+    --card: #fbfbf7; --card-head: #f0f1e8;
+    --ink: #1d2416; --ink-2: #4a5440; --muted: #7a8370;
+    --border: #d3d6c4; --grid: #e7e9dd;
+    --shadow: 0 1px 2px rgba(40,50,30,.08), 0 6px 18px rgba(40,50,30,.08);
+    --cy: #2a78d6; --ly: #d55181; --up: #2f7d1d; --down: #c8332f;
+    --banner-bg: #fff3d6; --banner-ink: #6e4b00;
   }
-  :root[data-theme="dark"] {
+  [data-skin="maroon"] {
+    color-scheme: light;
+    --page: linear-gradient(160deg, #f6eff0 0%, #ede1e3 100%);
+    --header: linear-gradient(100deg, #5a1520 0%, #8e2433 100%);
+    --header-ink: #ffffff; --header-sub: #f0c9cf;
+    --accent: #8e2433; --accent-ink: #ffffff;
+    --card: #ffffff; --card-head: #fbf5f6;
+    --ink: #24131a; --ink-2: #5a4249; --muted: #8a737a;
+    --border: #e6d4d8; --grid: #f2e8ea;
+    --shadow: 0 1px 2px rgba(90,21,32,.06), 0 6px 18px rgba(90,21,32,.08);
+    --cy: #2a78d6; --ly: #d55181; --up: #0a8a3a; --down: #d13b3b;
+    --banner-bg: #fff3d6; --banner-ink: #6e4b00;
+  }
+  [data-skin="dark"] {
     color-scheme: dark;
-    --bg: #121211; --surface: #1a1a19; --border: #2c2c2a; --grid: #262624;
-    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e88;
-    --cy: #3987e5; --ly: #6d6c67; --good: #3aa53a; --bad: #e66767;
-    --warn-bg: #3a2f14; --warn-ink: #f0c879;
+    --page: radial-gradient(1200px 600px at 10% -10%, #1b2638 0%, #0d1117 60%);
+    --header: linear-gradient(100deg, #111a29 0%, #1a2a44 100%);
+    --header-ink: #f0f4fa; --header-sub: #8fa3c0;
+    --accent: #3987e5; --accent-ink: #ffffff;
+    --card: #161b22; --card-head: #1b222c;
+    --ink: #e6edf3; --ink-2: #b4bfcc; --muted: #8b949e;
+    --border: #2b333e; --grid: #222a34;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --cy: #3987e5; --ly: #d55181; --up: #3fbf6a; --down: #ef6b6b;
+    --banner-bg: #3a2f14; --banner-ink: #f0c879;
   }
+
   * { box-sizing: border-box; }
+  html { background: var(--page) fixed; min-height: 100%; }
+  html, body { margin: 0; }
   body {
-    margin: 0; background: var(--bg); color: var(--text-primary);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    min-height: 100vh; background: transparent;
+    color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
   }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 48px; }
-  header { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: flex-end; justify-content: space-between; margin-bottom: 18px; }
-  h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
-  .sub { color: var(--text-secondary); margin-top: 2px; }
-  .meta { color: var(--text-muted); font-size: 12px; text-align: right; }
-  .meta button {
-    font: inherit; font-size: 12px; margin-left: 8px; padding: 4px 10px; cursor: pointer;
-    background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: 6px;
+  /* ---------- Header ---------- */
+  .top { background: var(--header); color: var(--header-ink); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+  .top .in { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; gap: 12px 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .badge { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.14); display: grid; place-items: center; flex: none; }
+  .brand h1 { font-size: 19px; margin: 0; font-weight: 650; letter-spacing: .01em; }
+  .brand .sub { color: var(--header-sub); font-size: 12.5px; }
+  .ctrls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .ctrls label { font-size: 12px; color: var(--header-sub); }
+  .ctrls select, .ctrls button {
+    font: inherit; font-size: 12.5px; color: var(--header-ink); background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25); border-radius: 7px; padding: 6px 10px; cursor: pointer;
   }
-  section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 18px; }
-  section h2 { font-size: 16px; margin: 0 0 2px; }
-  .note { color: var(--text-secondary); font-size: 12.5px; margin: 0 0 14px; }
-  .banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; margin-bottom: 14px; }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 16px; }
-  .tile { border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
-  .tile .k { color: var(--text-secondary); font-size: 12px; }
-  .tile .v { font-size: 26px; font-weight: 650; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .tile .s { color: var(--text-muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  .delta { font-weight: 600; white-space: nowrap; }
-  .delta .ar { font-size: 10px; }
-  .delta.up .ar { color: var(--good); }
-  .delta.down .ar { color: var(--bad); }
-  .tbl-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 13px; }
-  th, td { padding: 7px 10px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
-  th { color: var(--text-secondary); font-weight: 600; font-size: 12px; position: sticky; top: 0; background: var(--surface); }
+  .ctrls select option { color: #111; }
+  .stamp { font-size: 11.5px; color: var(--header-sub); text-align: right; line-height: 1.35; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 18px 16px 40px; }
+
+  /* ---------- View switch ---------- */
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; box-shadow: var(--shadow); }
+  .seg button {
+    font: inherit; font-weight: 600; font-size: 13.5px; border: 0; background: transparent; color: var(--ink-2);
+    padding: 8px 18px; border-radius: 7px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .seg .live { width: 8px; height: 8px; border-radius: 50%; background: #e34948; box-shadow: 0 0 0 0 rgba(227,73,72,.6); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(227,73,72,.55); } 70% { box-shadow: 0 0 0 7px rgba(227,73,72,0); } 100% { box-shadow: 0 0 0 0 rgba(227,73,72,0); } }
+  .viewdate { font-size: 13px; color: var(--ink-2); }
+  .viewdate b { color: var(--ink); }
+
+  .banner { background: var(--banner-bg); color: var(--banner-ink); border-radius: 9px; padding: 9px 14px; font-size: 12.5px; margin-bottom: 14px; }
+
+  /* ---------- KPI cards ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 520px) { .kpi .v { font-size: 24px; } .kpi:last-child { grid-column: 1 / -1; } }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+  .kpi .k { font-size: 12px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .v { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .kpi .v small { font-size: 15px; color: var(--muted); font-weight: 600; }
+  .kpi .s { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dl { font-weight: 650; white-space: nowrap; }
+  .dl.up { color: var(--up); } .dl.down { color: var(--down); }
+
+  /* ---------- Cards ---------- */
+  .grid { display: grid; gap: 14px; margin-bottom: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 960px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .card h3 { margin: 0; padding: 11px 16px; font-size: 14px; font-weight: 650; background: var(--card-head); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .card h3 span { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .card .body { padding: 14px 16px; }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); justify-content: center; margin-top: 8px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  /* donut + legend */
+  .pie { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: center; }
+  @media (min-width: 560px) { .pie { grid-template-columns: 260px 1fr; } }
+  .pie > .chart { width: 100%; max-width: 240px; margin: 0 auto; }
+  .pie-legend { display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 13px; }
+  .pie-legend .row { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 10px; align-items: center; padding: 5px 8px; border-radius: 7px; }
+  .pie-legend .row:hover { background: var(--grid); }
+  .pie-legend i { width: 12px; height: 12px; border-radius: 3px; }
+  .pie-legend .n { font-variant-numeric: tabular-nums; color: var(--ink-2); min-width: 34px; text-align: right; }
+  .pie-legend .p { font-variant-numeric: tabular-nums; font-weight: 650; min-width: 58px; text-align: right; }
+
+  /* mini donuts */
+  .minis { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+  .mini { border: 1px solid var(--border); border-radius: 10px; padding: 8px 6px 10px; text-align: center; }
+  .mini .t { font-weight: 650; font-size: 13px; }
+  .mini .f { font-size: 11px; color: var(--muted); }
+  .mini .x { font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  /* table */
+  .tbl { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.8px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  thead th { background: var(--card-head); color: var(--ink-2); font-weight: 650; font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; position: sticky; top: 0; }
+  thead tr.grp th { text-align: center; border-bottom: 1px solid var(--border); }
   th:first-child, td:first-child { text-align: left; }
-  tr.total td { font-weight: 650; border-top: 2px solid var(--border); border-bottom: none; }
-  td .full { color: var(--text-muted); font-size: 11.5px; margin-left: 6px; }
-  .dash { color: var(--text-muted); }
-  .chart { position: relative; width: 100%; }
-  .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
-  .legend { display: flex; gap: 16px; font-size: 12px; color: var(--text-secondary); margin: 0 0 8px; flex-wrap: wrap; }
-  .legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
-  .legend i.bar { height: 10px; width: 10px; border-radius: 2px; }
-  .tip {
-    position: absolute; pointer-events: none; background: var(--text-primary); color: var(--surface);
-    font-size: 12px; padding: 6px 9px; border-radius: 6px; white-space: nowrap; opacity: 0; transition: opacity .1s;
-    transform: translate(-50%, calc(-100% - 10px)); z-index: 5; font-variant-numeric: tabular-nums;
-  }
-  .grid2 { display: grid; grid-template-columns: 1fr; gap: 18px; }
-  @media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; } }
-  .empty { color: var(--text-muted); padding: 24px 0; text-align: center; }
-  .err { color: var(--bad); }
-  footer { color: var(--text-muted); font-size: 12px; text-align: center; margin-top: 8px; }
+  tbody tr:hover td { background: var(--grid); }
+  tr.total td { font-weight: 700; border-top: 2px solid var(--border); background: var(--card-head); }
+  td .full { color: var(--muted); font-size: 11px; margin-left: 6px; }
+  .dash { color: var(--muted); }
+
+  .empty { color: var(--muted); text-align: center; padding: 26px 8px; }
+  .err { color: #ffd2d2; }
+  #tip { position: fixed; pointer-events: none; z-index: 50; background: #111827; color: #fff; font-size: 12px; padding: 7px 10px; border-radius: 7px; opacity: 0; transition: opacity .08s; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.25); font-variant-numeric: tabular-nums; }
+  footer { text-align: center; color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div>
-      <h1>Mail-Express Punctuality</h1>
-      <div class="sub">Delhi Division &middot; Mail-Express Group (M) &middot; Source: ICMS PAM</div>
+<div class="top">
+  <div class="in">
+    <div class="brand">
+      <div class="badge" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14"/><circle cx="9" cy="13" r=".8" fill="currentColor"/><circle cx="15" cy="13" r=".8" fill="currentColor"/><path d="M8 16l-2 4M16 16l2 4M7 19h10"/></svg>
+      </div>
+      <div>
+        <h1>Punctuality Performance &mdash; Mail Express [BG]</h1>
+        <div class="sub">Delhi Division &middot; Mail-Express Group (M) &middot; Source: ICMS PAM</div>
+      </div>
     </div>
-    <div class="meta"><span id="updated">Loading&hellip;</span><button id="refresh" type="button">Refresh</button></div>
-  </header>
-
-  <section id="today">
-    <h2>Today &mdash; live position</h2>
-    <p class="note" id="today-note">&nbsp;</p>
-    <div id="today-body"><div class="empty">Loading&hellip;</div></div>
-  </section>
-
-  <section id="prev">
-    <h2>Previous day</h2>
-    <p class="note" id="prev-note">&nbsp;</p>
-    <div id="prev-body"><div class="empty">Loading&hellip;</div></div>
-  </section>
-
-  <section id="trend">
-    <h2>Trend &mdash; Total (M) on-date PP%</h2>
-    <p class="note">Each point is one completed day. This year vs same date last year.</p>
-    <div id="trend-body"><div class="empty">Loading&hellip;</div></div>
-  </section>
-
-  <footer>PP% = (Total RT/NLT &divide; Reported) &times; 100 &middot; Diff in percentage points (this year &minus; last year) &middot; Auto-refreshes every 5 minutes</footer>
+    <div class="ctrls">
+      <label for="skin">Theme</label>
+      <select id="skin" aria-label="Theme">
+        <option value="navy">Railway Blue</option>
+        <option value="classic">Classic Olive</option>
+        <option value="maroon">Maroon</option>
+        <option value="dark">Night</option>
+      </select>
+      <button id="refresh" type="button">&#x21bb; Refresh</button>
+      <div class="stamp" id="stamp">Loading&hellip;</div>
+    </div>
+  </div>
 </div>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Choose view">
+      <button type="button" id="btn-prev" aria-pressed="true">Previous Day</button>
+      <button type="button" id="btn-today" aria-pressed="false"><span class="live"></span>Today (Live)</button>
+    </div>
+    <div class="viewdate" id="viewdate">&nbsp;</div>
+  </div>
+
+  <div id="view"><div class="empty">Loading&hellip;</div></div>
+
+  <footer>PP% = (Total RT/NLT &divide; Reported) &times; 100 &middot; Diff = this year &minus; last year (percentage points) &middot; Composition % is of Act. Sch. &middot; Auto-refresh every 5 min</footer>
+</div>
+<div id="tip"></div>
 
 <script>
 const FEED_URL = "https://script.google.com/macros/s/AKfycbw9fZSeDdnB8CpgEtqdr__KFKatIrLTBgmyicNTeV61SBYrYp7UeNW2MSsXlS0S73mj/exec";
 const REFRESH_MS = 5 * 60 * 1000;
 
-const TYPE_NAMES = {
-  AMTB: "Amrit Bharat", DRNT: "Duronto", GBR: "Garib Rath", JSH: "Jan Shatabdi",
-  MEX: "Mail/Express", RAJ: "Rajdhani", SHT: "Shatabdi", SUF: "Superfast",
-  TEJ: "Tejas", VNDB: "Vande Bharat", "Total(M)": "Total (M)"
-};
+const TYPE_NAMES = { AMTB: "Amrit Bharat", DRNT: "Duronto", GBR: "Garib Rath", JSH: "Jan Shatabdi", MEX: "Mail/Express",
+  RAJ: "Rajdhani", SHT: "Shatabdi", SUF: "Superfast", TEJ: "Tejas", VNDB: "Vande Bharat" };
 
-// ---------- formatting ----------
+// Composition slices - fixed order and colour, matching the ICMS chart convention
+const SLICES = [
+  { key: "lt",      label: "LT",           color: "#e34948" },
+  { key: "bt",      label: "BT",           color: "#22b14c" },
+  { key: "rt",      label: "RT",           color: "#0f7a1f" },
+  { key: "mkup",    label: "MKUP",         color: "#2a78d6" },
+  { key: "nlt",     label: "NLT",          color: "#9fd3d0" },
+  { key: "not_rpt", label: "Not Reported", color: "#f2a3b3" },
+];
+
+// ---------- helpers ----------
 const isNum = v => typeof v === "number" && isFinite(v);
-const n0 = v => (isNum(v) ? v.toLocaleString("en-IN") : "0");
-const pct = v => (isNum(v) ? v.toFixed(2) : "—");
+const num = v => (isNum(v) ? v : 0);
+const n0 = v => num(v).toLocaleString("en-IN");
+const p2 = v => (isNum(v) ? v.toFixed(2) : "—");
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-const fmtDate = iso => { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${+d} ${MON[+m - 1]} ${y}`; };
-const fmtShort = iso => { const [, m, d] = iso.split("-"); return `${+d} ${MON[+m - 1]}`; };
-const fmtAsOf = s => { const m = /(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})/.exec(s || ""); return m ? `${m[2]}:${m[3]}` : (s || "—"); };
-const fmtStamp = s => { if (!s) return "—"; const [d, t] = s.split("T"); return `${fmtDate(d)}, ${t ? t.slice(0, 5) : ""}`; };
+const dLong = iso => { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${d}-${MON[+m - 1]}-${y}`; };
+const dShort = iso => { const [, m, d] = iso.split("-"); return `${+d}-${MON[+m - 1]}`; };
+const asOf = s => { const m = /_(\d{2})(\d{2})/.exec(s || ""); return m ? `${m[1]}:${m[2]}` : "—"; };
+const stampFmt = s => { if (!s) return "—"; const [d, t] = s.split("T"); return `${dLong(d)} ${t ? t.slice(0, 5) : ""}`; };
 
-// PP% and Diff are meaningless when nothing is reported: ICMS treats a blank as 0
-function pp(row, cyKey, lyKey) {
-  const reported = isNum(row.rpt) && row.rpt > 0;
-  const cy = reported && isNum(row[cyKey]) ? row[cyKey] : null;
-  const ly = isNum(row[lyKey]) ? row[lyKey] : null;
-  return { cy, ly, diff: cy !== null && ly !== null ? +(cy - ly).toFixed(2) : null };
+// On-date PP% is meaningless with nothing reported (ICMS treats blank as 0)
+function onDate(r) {
+  const ok = num(r.rpt) > 0;
+  const cy = ok && isNum(r.pp_ondate_cy) ? r.pp_ondate_cy : null;
+  const ly = isNum(r.pp_ondate_ly) ? r.pp_ondate_ly : null;
+  return { cy, ly, diff: cy !== null && ly !== null ? cy - ly : null };
 }
-// Cumulative (month/FY) PP% does not depend on today's reporting
-function ppCum(row, cyKey, lyKey) {
-  const cy = isNum(row[cyKey]) ? row[cyKey] : null;
-  const ly = isNum(row[lyKey]) ? row[lyKey] : null;
-  return { cy, ly, diff: cy !== null && ly !== null ? +(cy - ly).toFixed(2) : null };
+function cum(r, a, b) {
+  const cy = isNum(r[a]) ? r[a] : null, ly = isNum(r[b]) ? r[b] : null;
+  return { cy, ly, diff: cy !== null && ly !== null ? cy - ly : null };
 }
-function delta(d) {
+function dl(d) {
   if (d === null) return '<span class="dash">—</span>';
-  if (Math.abs(d) < 0.005) return '<span class="delta">0.00</span>';
-  const up = d > 0;
-  return `<span class="delta ${up ? "up" : "down"}"><span class="ar">${up ? "▲" : "▼"}</span> ${up ? "+" : "−"}${Math.abs(d).toFixed(2)}</span>`;
-}
-const typeCell = t => `${esc(t)}${TYPE_NAMES[t] && t !== "Total(M)" ? `<span class="full">${esc(TYPE_NAMES[t])}</span>` : ""}`;
-
-// ---------- tiles ----------
-function tile(k, v, s) {
-  return `<div class="tile"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`;
+  if (Math.abs(d) < 0.005) return '<span class="dl">0.00</span>';
+  return d > 0 ? `<span class="dl up">▲ +${d.toFixed(2)}</span>` : `<span class="dl down">▼ −${Math.abs(d).toFixed(2)}</span>`;
 }
 
-// ---------- tooltip helper ----------
-function attachTip(container) {
-  const tip = document.createElement("div");
-  tip.className = "tip";
-  container.appendChild(tip);
-  return {
-    show(html, x, y) { tip.innerHTML = html; tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1; },
-    hide() { tip.style.opacity = 0; }
-  };
+// ---------- tooltip ----------
+const tip = document.getElementById("tip");
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (!t) { tip.style.opacity = 0; return; }
+  tip.innerHTML = t.getAttribute("data-tip");
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY - h - 12;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y < 8) y = e.clientY + 16;
+  tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1;
+});
+
+// ---------- donut ----------
+function arc(cx, cy, r0, r1, a0, a1) {
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  const p = (r, a) => `${(cx + r * Math.sin(a)).toFixed(2)},${(cy - r * Math.cos(a)).toFixed(2)}`;
+  return `M${p(r1, a0)}A${r1},${r1} 0 ${large} 1 ${p(r1, a1)}L${p(r0, a1)}A${r0},${r0} 0 ${large} 0 ${p(r0, a0)}Z`;
+}
+function donutSVG(row, size, centerTop, centerBottom, title) {
+  const base = num(row.act_sch);
+  const vals = SLICES.map(s => ({ ...s, v: num(row[s.key]) }));
+  const total = vals.reduce((a, b) => a + b.v, 0) || 1;
+  const c = size / 2, r1 = c - 4, r0 = r1 * 0.62, gap = vals.filter(v => v.v > 0).length > 1 ? 0.012 : 0;
+  let a = 0, paths = "";
+  vals.forEach(s => {
+    if (s.v <= 0) return;
+    const span = (s.v / total) * Math.PI * 2;
+    const pct = base ? (s.v / base) * 100 : 0;
+    const a0 = a + gap / 2, a1 = a + span - gap / 2;
+    const tipTxt = `<b>${esc(title)}</b><br>${s.label}: ${n0(s.v)} (${pct.toFixed(2)}%)`;
+    paths += span >= Math.PI * 2 - 0.001
+      ? `<circle cx="${c}" cy="${c}" r="${(r0 + r1) / 2}" fill="none" stroke="${s.color}" stroke-width="${r1 - r0}" data-tip="${esc(tipTxt)}"/>`
+      : `<path d="${arc(c, c, r0, r1, a0, a1)}" fill="${s.color}" data-tip="${esc(tipTxt)}"/>`;
+    a += span;
+  });
+  if (!paths) paths = `<circle cx="${c}" cy="${c}" r="${(r0 + r1) / 2}" fill="none" stroke="var(--grid)" stroke-width="${r1 - r0}"/>`;
+  const big = size >= 200;
+  return `<svg viewBox="0 0 ${size} ${size}" role="img" aria-label="${esc(title)} composition">${paths}
+    <text x="${c}" y="${c + (big ? 4 : 3)}" text-anchor="middle" font-size="${big ? 30 : 17}" font-weight="700" fill="var(--ink)">${centerTop}</text>
+    <text x="${c}" y="${c + (big ? 24 : 16)}" text-anchor="middle" font-size="${big ? 12 : 9.5}" fill="var(--muted)">${centerBottom}</text></svg>`;
+}
+function bigPie(row, title) {
+  const base = num(row.act_sch);
+  const od = onDate(row);
+  const legend = SLICES.map(s => {
+    const v = num(row[s.key]), pct = base ? (v / base) * 100 : 0;
+    return `<div class="row" data-tip="${esc(`${s.label}: ${n0(v)} of ${n0(base)} Act. Sch.`)}"><i style="background:${s.color}"></i><span>${s.label}</span><span class="n">${n0(v)}</span><span class="p">${pct.toFixed(2)}%</span></div>`;
+  }).join("");
+  return `<div class="pie"><div class="chart">${donutSVG(row, 260, p2(od.cy), "PP%", title)}</div>
+    <div class="pie-legend">${legend}<div class="row" style="border-top:1px solid var(--border);border-radius:0;margin-top:4px;padding-top:8px"><i></i><b>Act. Sch.</b><span class="n"><b>${n0(base)}</b></span><span class="p">100%</span></div></div></div>`;
+}
+function miniDonuts(rows) {
+  const types = rows.filter(r => r.row_type === "train_type" && num(r.act_sch) > 0);
+  if (!types.length) return '<div class="empty">No train-type data</div>';
+  return `<div class="minis">${types.map(r => {
+    const od = onDate(r);
+    return `<div class="mini"><div class="chart" style="max-width:104px;margin:0 auto">${donutSVG(r, 110, od.cy === null ? "—" : od.cy.toFixed(0) + "%", "PP", r.train_type)}</div>
+      <div class="t">${esc(r.train_type)}</div><div class="f">${esc(TYPE_NAMES[r.train_type] || "")}</div>
+      <div class="x">Rpt ${n0(r.rpt)}/${n0(r.act_sch)} &middot; LT ${n0(r.lt)}</div></div>`;
+  }).join("")}</div>`;
 }
 
-// ---------- bar chart: PP% by train type, CY bar + LY tick ----------
-function barChart(el, rows) {
-  const data = rows.filter(r => r.row_type === "train_type").map(r => ({ t: r.train_type, ...pp(r, "pp_ondate_cy", "pp_ondate_ly"), rpt: r.rpt }));
-  if (!data.length) { el.innerHTML = '<div class="empty">No data</div>'; return; }
-  const W = 560, rowH = 26, padL = 56, padR = 44, padT = 8, padB = 24;
-  const H = padT + padB + rowH * data.length;
-  const x = v => padL + (v / 100) * (W - padL - padR);
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="On-date PP% by train type, this year bars with last-year markers">`;
+// ---------- grouped bar: Day / Month / FY, CY vs LY ----------
+function groupBars(tot, dateIso, isToday) {
+  const d = onDate(tot), m = cum(tot, "pp_month_cy", "pp_month_ly"), f = cum(tot, "pp_fy_cy", "pp_fy_ly");
+  const ds = dShort(dateIso);
+  const groups = [
+    { l1: ds, l2: isToday ? "(Day, so far)" : "(Day)", v: d },
+    { l1: `Upto ${ds}`, l2: "(Month)", v: m },
+    { l1: `Upto ${ds}`, l2: "(Financial Year)", v: f },
+  ];
+  const W = 520, H = 290, pl = 36, pr = 10, pt = 18, pb = 46;
+  const y = v => pt + (1 - v / 100) * (H - pt - pb);
+  const gw = (W - pl - pr) / groups.length, bw = Math.min(54, gw * 0.3);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PP% this year versus last year for day, month and financial year">`;
+  for (let g = 0; g <= 100; g += 20) {
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--grid)"/>`;
+    s += `<text x="${pl - 6}" y="${y(g) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${g}</text>`;
+  }
+  groups.forEach((g, i) => {
+    const cx = pl + gw * i + gw / 2;
+    [["cy", "var(--cy)", -1, "Current year"], ["ly", "var(--ly)", 1, "Last year"]].forEach(([k, col, side, nm]) => {
+      const v = g.v[k];
+      const x = cx + (side < 0 ? -bw - 2 : 2);
+      if (v === null) {
+        s += `<text x="${x + bw / 2}" y="${y(0) - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">—</text>`;
+        return;
+      }
+      const top = y(v), h = y(0) - top;
+      s += `<path d="M${x},${y(0)}V${top + 4}a4,4 0 0 1 4,-4h${bw - 8}a4,4 0 0 1 4,4V${y(0)}Z" fill="${col}"
+              data-tip="${esc(`<b>${g.l1} ${g.l2}</b><br>${nm}: ${v.toFixed(2)}`)}"/>`;
+      s += `<text x="${x + bw / 2}" y="${top - 6}" text-anchor="middle" font-size="12" font-weight="650" fill="var(--ink)">${v.toFixed(2)}</text>`;
+    });
+    s += `<text x="${cx}" y="${H - pb + 18}" text-anchor="middle" font-size="12" fill="var(--ink-2)">${esc(g.l1)}</text>`;
+    s += `<text x="${cx}" y="${H - pb + 33}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(g.l2)}</text>`;
+  });
+  s += `<line x1="${pl}" x2="${W - pr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--border)"/></svg>`;
+  return `<div class="chart">${s}</div><div class="legend"><span><i style="background:var(--cy)"></i>Current Year</span><span><i style="background:var(--ly)"></i>Last Year</span></div>`;
+}
+
+// ---------- PP% by train type (bar + LY tick) ----------
+function typeBars(rows) {
+  const data = rows.filter(r => r.row_type === "train_type").map(r => ({ t: r.train_type, ...onDate(r), rpt: r.rpt, sch: r.act_sch }));
+  const W = 520, rh = 26, pl = 56, pr = 46, pt = 6, pb = 24, H = pt + pb + rh * data.length;
+  const x = v => pl + (v / 100) * (W - pl - pr);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="On-date PP% by train type">`;
   [0, 25, 50, 75, 100].forEach(g => {
-    svg += `<line x1="${x(g)}" x2="${x(g)}" y1="${padT}" y2="${H - padB}" stroke="var(--grid)" stroke-width="1"/>`;
-    svg += `<text x="${x(g)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${g}</text>`;
+    s += `<line x1="${x(g)}" x2="${x(g)}" y1="${pt}" y2="${H - pb}" stroke="var(--grid)"/>`;
+    s += `<text x="${x(g)}" y="${H - 7}" text-anchor="middle" font-size="11" fill="var(--muted)">${g}</text>`;
   });
   data.forEach((d, i) => {
-    const y = padT + i * rowH, bh = 14, by = y + (rowH - bh) / 2;
-    svg += `<text x="${padL - 8}" y="${y + rowH / 2 + 4}" text-anchor="end" font-size="12" fill="var(--text-secondary)">${esc(d.t)}</text>`;
+    const y = pt + i * rh, bh = 14, by = y + (rh - bh) / 2;
+    const tt = esc(`<b>${d.t}</b> ${TYPE_NAMES[d.t] || ""}<br>This year: ${p2(d.cy)}<br>Last year: ${p2(d.ly)}<br>Reported: ${n0(d.rpt)} / ${n0(d.sch)}`);
+    s += `<rect x="0" y="${y}" width="${W}" height="${rh}" fill="transparent" data-tip="${tt}"/>`;
+    s += `<text x="${pl - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)" data-tip="${tt}">${esc(d.t)}</text>`;
     if (d.cy !== null) {
-      const w = Math.max(0, x(d.cy) - x(0));
-      svg += `<path d="M${x(0)},${by} h${Math.max(0, w - 4)} a4,4 0 0 1 4,4 v${bh - 8} a4,4 0 0 1 -4,4 h${-Math.max(0, w - 4)} z" fill="var(--cy)"/>`;
-      svg += `<text x="${x(d.cy) + 6}" y="${y + rowH / 2 + 4}" font-size="11.5" fill="var(--text-primary)">${d.cy.toFixed(1)}</text>`;
+      const w = Math.max(6, x(d.cy) - x(0));
+      s += `<path d="M${x(0)},${by}h${w - 4}a4,4 0 0 1 4,4v${bh - 8}a4,4 0 0 1 -4,4h${-(w - 4)}Z" fill="var(--cy)" data-tip="${tt}"/>`;
+      // keep the value label clear of the last-year tick
+      let lx = x(0) + w + 6;
+      if (d.ly !== null && x(d.ly) >= lx - 6 && x(d.ly) <= lx + 32) lx = x(d.ly) + 6;
+      s += `<text x="${lx}" y="${y + rh / 2 + 4}" font-size="11.5" font-weight="600" fill="var(--ink)">${d.cy.toFixed(1)}</text>`;
     } else {
-      svg += `<text x="${x(0) + 6}" y="${y + rowH / 2 + 4}" font-size="11.5" fill="var(--text-muted)">not reported</text>`;
+      s += `<text x="${x(0) + 6}" y="${y + rh / 2 + 4}" font-size="11.5" fill="var(--muted)">not reported</text>`;
     }
-    if (d.ly !== null) {
-      svg += `<line x1="${x(d.ly)}" x2="${x(d.ly)}" y1="${y + 3}" y2="${y + rowH - 3}" stroke="var(--text-secondary)" stroke-width="2.5" stroke-linecap="round"/>`;
-    }
-    svg += `<rect class="hit" data-i="${i}" x="0" y="${y}" width="${W}" height="${rowH}" fill="transparent"/>`;
+    if (d.ly !== null) s += `<line x1="${x(d.ly)}" x2="${x(d.ly)}" y1="${y + 3}" y2="${y + rh - 3}" stroke="var(--ly)" stroke-width="3" stroke-linecap="round" data-tip="${tt}"/>`;
   });
-  svg += "</svg>";
-  el.innerHTML = `<div class="legend"><span><i class="bar" style="background:var(--cy)"></i>This year</span><span><i style="background:var(--text-secondary);width:3px;height:12px"></i>Same date last year</span></div><div class="chart">${svg}</div>`;
-  const chart = el.querySelector(".chart");
-  const tip = attachTip(chart);
-  chart.querySelectorAll(".hit").forEach(r => {
-    r.addEventListener("mousemove", ev => {
-      const d = data[+r.dataset.i];
-      const box = chart.getBoundingClientRect();
-      tip.show(`<b>${esc(d.t)}</b> ${esc(TYPE_NAMES[d.t] || "")}<br>This year: ${pct(d.cy)}<br>Last year: ${pct(d.ly)}<br>Diff: ${d.diff === null ? "—" : (d.diff > 0 ? "+" : "") + d.diff.toFixed(2)}`,
-        ev.clientX - box.left, ev.clientY - box.top);
-    });
-    r.addEventListener("mouseleave", tip.hide);
-  });
+  s += "</svg>";
+  return `<div class="chart">${s}</div><div class="legend"><span><i style="background:var(--cy)"></i>Current Year</span><span><i style="background:var(--ly);width:4px"></i>Last Year (same date)</span></div>`;
 }
 
-// ---------- line chart: trend ----------
-function lineChart(el, trend) {
+// ---------- LT break-up ----------
+function ltBars(tot) {
+  const b = [["1–15 min", tot.lt_1_15], ["16–30 min", tot.lt_16_30], ["31–45 min", tot.lt_31_45], ["46–60 min", tot.lt_46_60], ["Above 60 min", tot.lt_above_60]].map(([k, v]) => [k, num(v)]);
+  const max = Math.max(1, ...b.map(x => x[1])), lt = num(tot.lt) || 1;
+  const shades = ["#f6b3a8", "#f08a7a", "#e34948", "#bf2f30", "#8f1c1f"];
+  const W = 520, rh = 34, pl = 96, pr = 70, H = rh * b.length + 4;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="LT trains by minutes late">`;
+  b.forEach(([k, v], i) => {
+    const y = i * rh + 4, w = (v / max) * (W - pl - pr);
+    const tt = esc(`<b>${k}</b><br>${n0(v)} trains (${((v / lt) * 100).toFixed(1)}% of LT)`);
+    s += `<rect x="0" y="${y}" width="${W}" height="${rh}" fill="transparent" data-tip="${tt}"/>`;
+    s += `<text x="${pl - 8}" y="${y + 19}" text-anchor="end" font-size="12" fill="var(--ink-2)">${k}</text>`;
+    s += `<rect x="${pl}" y="${y + 7}" width="${W - pl - pr}" height="18" rx="4" fill="var(--grid)"/>`;
+    if (v > 0) s += `<rect x="${pl}" y="${y + 7}" width="${Math.max(6, w)}" height="18" rx="4" fill="${shades[i]}" data-tip="${tt}"/>`;
+    s += `<text x="${W - pr + 8}" y="${y + 20}" font-size="12" font-weight="650" fill="var(--ink)">${n0(v)}</text>`;
+  });
+  s += "</svg>";
+  return `<div class="chart">${s}</div><div class="legend">Total LT trains: <b style="margin-left:4px">${n0(tot.lt)}</b></div>`;
+}
+
+// ---------- trend ----------
+function trendChart(trend) {
   const pts = (trend || []).filter(r => r.report_date);
-  if (pts.length < 2) {
-    el.innerHTML = `<div class="empty">The trend builds up as daily runs accumulate &mdash; ${pts.length} day${pts.length === 1 ? "" : "s"} recorded so far.</div>`;
+  if (pts.length < 2) return `<div class="empty">The trend builds up as daily runs accumulate &mdash; ${pts.length} day${pts.length === 1 ? "" : "s"} recorded so far.</div>`;
+  const W = 1180, H = 290, pl = 40, pr = 14, pt = 14, pb = 30;
+  const vals = pts.flatMap(p => [p.pp_ondate_cy, p.pp_ondate_ly]).filter(isNum);
+  let lo = Math.max(0, Math.floor(Math.min(...vals) / 10) * 10 - 10), hi = Math.min(100, Math.ceil(Math.max(...vals) / 10) * 10 + 10);
+  const x = i => pl + (i / (pts.length - 1)) * (W - pl - pr), y = v => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
+  const line = k => { let d = "", pen = false; pts.forEach((p, i) => { if (isNum(p[k])) { d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`; pen = true; } else pen = false; }); return d; };
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily Total M on-date PP%">`;
+  for (let g = lo; g <= hi; g += 10) {
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--grid)"/><text x="${pl - 6}" y="${y(g) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${g}</text>`;
+  }
+  const step = Math.max(1, Math.ceil(pts.length / 12));
+  pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) s += `<text x="${x(i)}" y="${H - 9}" text-anchor="middle" font-size="11" fill="var(--muted)">${dShort(p.report_date)}</text>`; });
+  s += `<path d="${line("pp_ondate_cy")} L${x(pts.length - 1)},${y(lo)} L${x(0)},${y(lo)} Z" fill="var(--cy)" opacity=".08"/>`;
+  s += `<path d="${line("pp_ondate_ly")}" fill="none" stroke="var(--ly)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  s += `<path d="${line("pp_ondate_cy")}" fill="none" stroke="var(--cy)" stroke-width="2.4"/>`;
+  const colW = (W - pl - pr) / Math.max(1, pts.length - 1);
+  pts.forEach((p, i) => {
+    const tt = esc(`<b>${dLong(p.report_date)}</b><br>This year: ${p2(p.pp_ondate_cy)}<br>Last year: ${p2(p.pp_ondate_ly)}<br>Reported ${n0(p.rpt)} &middot; LT ${n0(p.lt)}`);
+    if (isNum(p.pp_ondate_cy)) s += `<circle cx="${x(i)}" cy="${y(p.pp_ondate_cy)}" r="4.5" fill="var(--cy)" stroke="var(--card)" stroke-width="2"/>`;
+    s += `<rect x="${x(i) - colW / 2}" y="${pt}" width="${colW}" height="${H - pt - pb}" fill="transparent" data-tip="${tt}"/>`;
+  });
+  s += "</svg>";
+  return `<div class="chart">${s}</div><div class="legend"><span><i style="background:var(--cy)"></i>Current Year</span><span><i style="background:var(--ly)"></i>Last Year (same date)</span></div>`;
+}
+
+// ---------- detail table ----------
+function table(rows, isToday) {
+  let h = `<div class="tbl"><table><thead>
+    <tr class="grp"><th></th><th colspan="4">Trains</th><th colspan="5">Right time / NLT</th><th colspan="6">Lost time (minutes late)</th><th colspan="3">On-date PP%</th>${isToday ? "" : '<th colspan="2">Month</th><th colspan="2">FY</th>'}</tr>
+    <tr><th>Train type</th><th>Act. Sch.</th><th>Rpt.</th><th>Not Rpt.</th><th>Excp.</th>
+      <th>BT</th><th>RT</th><th>MKUP</th><th>NLT</th><th>Total</th>
+      <th>LT</th><th>1&ndash;15</th><th>16&ndash;30</th><th>31&ndash;45</th><th>46&ndash;60</th><th>&gt;60</th>
+      <th>${isToday ? "So far" : "CY"}</th><th>LY</th><th>Diff</th>${isToday ? "" : "<th>CY</th><th>Diff</th><th>CY</th><th>Diff</th>"}</tr></thead><tbody>`;
+  rows.forEach(r => {
+    const d = onDate(r), m = cum(r, "pp_month_cy", "pp_month_ly"), f = cum(r, "pp_fy_cy", "pp_fy_ly");
+    const tot = r.row_type === "total";
+    h += `<tr class="${tot ? "total" : ""}"><td>${tot ? "Total (M)" : esc(r.train_type) + `<span class="full">${esc(TYPE_NAMES[r.train_type] || "")}</span>`}</td>
+      <td>${n0(r.act_sch)}</td><td>${n0(r.rpt)}</td><td>${n0(r.not_rpt)}</td><td>${n0(r.excp)}</td>
+      <td>${n0(r.bt)}</td><td>${n0(r.rt)}</td><td>${n0(r.mkup)}</td><td>${n0(r.nlt)}</td><td>${n0(r.rt_nlt_total)}</td>
+      <td>${n0(r.lt)}</td><td>${n0(r.lt_1_15)}</td><td>${n0(r.lt_16_30)}</td><td>${n0(r.lt_31_45)}</td><td>${n0(r.lt_46_60)}</td><td>${n0(r.lt_above_60)}</td>
+      <td><b>${p2(d.cy)}</b></td><td>${p2(d.ly)}</td><td>${dl(d.diff)}</td>
+      ${isToday ? "" : `<td>${p2(m.cy)}</td><td>${dl(m.diff)}</td><td>${p2(f.cy)}</td><td>${dl(f.diff)}</td>`}</tr>`;
+  });
+  return h + "</tbody></table></div>";
+}
+
+// ---------- view ----------
+let FEED = null, VIEW = "prev";
+
+function kpi(k, v, s) { return `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`; }
+
+function render() {
+  const view = document.getElementById("view"), vd = document.getElementById("viewdate");
+  document.getElementById("btn-prev").setAttribute("aria-pressed", VIEW === "prev");
+  document.getElementById("btn-today").setAttribute("aria-pressed", VIEW === "today");
+  if (!FEED) return;
+  const isToday = VIEW === "today";
+  const blk = isToday ? FEED.today : FEED.latest;
+  if (!blk || !blk.rows || !blk.rows.length) {
+    vd.innerHTML = "&nbsp;";
+    view.innerHTML = `<div class="card"><div class="empty">${isToday ? "No live snapshot available yet today." : "No previous-day data yet."}</div></div>`;
     return;
   }
-  const W = 1100, H = 300, padL = 44, padR = 16, padT = 14, padB = 30;
-  const vals = pts.flatMap(p => [p.pp_ondate_cy, p.pp_ondate_ly]).filter(isNum);
-  let lo = Math.floor(Math.min(...vals) / 10) * 10, hi = Math.ceil(Math.max(...vals) / 10) * 10;
-  if (hi - lo < 20) { lo = Math.max(0, hi - 20); }
-  const x = i => padL + (i / (pts.length - 1)) * (W - padL - padR);
-  const y = v => padT + (1 - (v - lo) / (hi - lo)) * (H - padT - padB);
-  const path = key => {
-    let d = "", pen = false;
-    pts.forEach((p, i) => { if (isNum(p[key])) { d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(p[key]).toFixed(1)}`; pen = true; } else pen = false; });
-    return d;
-  };
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily Total M on-date PP%, this year versus last year">`;
-  for (let g = lo; g <= hi; g += 10) {
-    svg += `<line x1="${padL}" x2="${W - padR}" y1="${y(g)}" y2="${y(g)}" stroke="var(--grid)"/>`;
-    svg += `<text x="${padL - 8}" y="${y(g) + 4}" text-anchor="end" font-size="11" fill="var(--text-muted)">${g}</text>`;
-  }
-  const step = Math.max(1, Math.ceil(pts.length / 10));
-  pts.forEach((p, i) => {
-    if (i % step === 0 || i === pts.length - 1)
-      svg += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="11" fill="var(--text-muted)">${fmtShort(p.report_date)}</text>`;
-  });
-  svg += `<path d="${path("pp_ondate_ly")}" fill="none" stroke="var(--ly)" stroke-width="2" stroke-dasharray="5 4"/>`;
-  svg += `<path d="${path("pp_ondate_cy")}" fill="none" stroke="var(--cy)" stroke-width="2"/>`;
-  pts.forEach((p, i) => {
-    if (isNum(p.pp_ondate_cy)) svg += `<circle cx="${x(i)}" cy="${y(p.pp_ondate_cy)}" r="4" fill="var(--cy)" stroke="var(--surface)" stroke-width="2"/>`;
-  });
-  svg += `<line class="cross" x1="0" x2="0" y1="${padT}" y2="${H - padB}" stroke="var(--text-muted)" stroke-width="1" opacity="0"/>`;
-  svg += `<rect class="hitzone" x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="transparent"/>`;
-  svg += "</svg>";
-  el.innerHTML = `<div class="legend"><span><i style="background:var(--cy)"></i>This year</span><span><i style="background:var(--ly)"></i>Same date last year</span></div><div class="chart">${svg}</div>`;
-  const chart = el.querySelector(".chart"), svgEl = chart.querySelector("svg");
-  const cross = svgEl.querySelector(".cross"), tip = attachTip(chart);
-  svgEl.querySelector(".hitzone").addEventListener("mousemove", ev => {
-    const box = svgEl.getBoundingClientRect(), scale = W / box.width;
-    const sx = (ev.clientX - box.left) * scale;
-    const i = Math.max(0, Math.min(pts.length - 1, Math.round(((sx - padL) / (W - padL - padR)) * (pts.length - 1))));
-    const p = pts[i];
-    cross.setAttribute("x1", x(i)); cross.setAttribute("x2", x(i)); cross.setAttribute("opacity", 1);
-    const cbox = chart.getBoundingClientRect();
-    tip.show(`<b>${fmtDate(p.report_date)}</b><br>This year: ${pct(p.pp_ondate_cy)}<br>Last year: ${pct(p.pp_ondate_ly)}<br>Reported: ${n0(p.rpt)} &middot; LT: ${n0(p.lt)}`,
-      (x(i) / scale) + (box.left - cbox.left), ev.clientY - cbox.top);
-  });
-  svgEl.querySelector(".hitzone").addEventListener("mouseleave", () => { tip.hide(); cross.setAttribute("opacity", 0); });
-}
-
-// ---------- tables ----------
-function todayTable(rows) {
-  let h = `<div class="tbl-wrap"><table><thead><tr>
-    <th>Train type</th><th>Act. Sch.</th><th>Reported</th><th>Not rpt.</th><th>RT/NLT</th><th>LT</th>
-    <th>PP% so far</th><th>LY (full day)</th><th>Diff</th></tr></thead><tbody>`;
-  rows.forEach(r => {
-    const p = pp(r, "pp_ondate_cy", "pp_ondate_ly");
-    h += `<tr class="${r.row_type === "total" ? "total" : ""}"><td>${typeCell(r.train_type)}</td>
-      <td>${n0(r.act_sch)}</td><td>${n0(r.rpt)}</td><td>${n0(r.not_rpt)}</td><td>${n0(r.rt_nlt_total)}</td><td>${n0(r.lt)}</td>
-      <td>${pct(p.cy)}</td><td>${pct(p.ly)}</td><td>${delta(p.diff)}</td></tr>`;
-  });
-  return h + "</tbody></table></div>";
-}
-function prevTable(rows) {
-  let h = `<div class="tbl-wrap"><table><thead><tr>
-    <th>Train type</th><th>Act. Sch.</th><th>Rpt.</th><th>BT</th><th>RT</th><th>MKUP</th><th>NLT</th><th>RT/NLT</th><th>LT</th>
-    <th>LT 1&ndash;15</th><th>16&ndash;30</th><th>31&ndash;45</th><th>46&ndash;60</th><th>&gt;60</th>
-    <th>PP%</th><th>LY</th><th>Diff</th><th>Month PP%</th><th>Diff</th><th>FY PP%</th><th>Diff</th></tr></thead><tbody>`;
-  rows.forEach(r => {
-    const d = pp(r, "pp_ondate_cy", "pp_ondate_ly");
-    const m = ppCum(r, "pp_month_cy", "pp_month_ly");
-    const f = ppCum(r, "pp_fy_cy", "pp_fy_ly");
-    h += `<tr class="${r.row_type === "total" ? "total" : ""}"><td>${typeCell(r.train_type)}</td>
-      <td>${n0(r.act_sch)}</td><td>${n0(r.rpt)}</td><td>${n0(r.bt)}</td><td>${n0(r.rt)}</td><td>${n0(r.mkup)}</td><td>${n0(r.nlt)}</td>
-      <td>${n0(r.rt_nlt_total)}</td><td>${n0(r.lt)}</td>
-      <td>${n0(r.lt_1_15)}</td><td>${n0(r.lt_16_30)}</td><td>${n0(r.lt_31_45)}</td><td>${n0(r.lt_46_60)}</td><td>${n0(r.lt_above_60)}</td>
-      <td>${pct(d.cy)}</td><td>${pct(d.ly)}</td><td>${delta(d.diff)}</td>
-      <td>${pct(m.cy)}</td><td>${delta(m.diff)}</td><td>${pct(f.cy)}</td><td>${delta(f.diff)}</td></tr>`;
-  });
-  return h + "</tbody></table></div>";
-}
-
-// ---------- sections ----------
-function renderToday(t) {
-  const body = document.getElementById("today-body"), note = document.getElementById("today-note");
+  const rows = blk.rows, tot = rows.find(r => r.row_type === "total") || {};
+  const d = onDate(tot), m = cum(tot, "pp_month_cy", "pp_month_ly"), f = cum(tot, "pp_fy_cy", "pp_fy_ly");
   const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
-  if (!t || !t.rows || !t.rows.length) { body.innerHTML = '<div class="empty">No live snapshot yet today.</div>'; note.textContent = ""; return; }
-  const tot = t.rows.find(r => r.row_type === "total") || {};
-  const p = pp(tot, "pp_ondate_cy", "pp_ondate_ly");
-  note.innerHTML = `${fmtDate(t.report_date)} &middot; as of <b>${fmtAsOf(t.as_of)}</b> &middot; partial day &mdash; figures change as trains are reported`;
-  const stale = t.report_date !== todayIso
-    ? `<div class="banner">This snapshot is from ${fmtDate(t.report_date)}, not today. The live update has not run yet today.</div>` : "";
-  body.innerHTML = stale + `<div class="tiles">
-      ${tile("PP% so far", pct(p.cy), `LY full day ${pct(p.ly)} &middot; ${delta(p.diff)}`)}
-      ${tile("Reported", `${n0(tot.rpt)}<span style="font-size:15px;color:var(--text-muted)"> / ${n0(tot.act_sch)}</span>`, `${n0(tot.not_rpt)} not yet reported`)}
-      ${tile("Right time / NLT", n0(tot.rt_nlt_total), `BT ${n0(tot.bt)} &middot; RT ${n0(tot.rt)} &middot; MKUP ${n0(tot.mkup)} &middot; NLT ${n0(tot.nlt)}`)}
-      ${tile("Lost time (LT)", n0(tot.lt), `&gt;60 min: ${n0(tot.lt_above_60)}`)}
-    </div>` + todayTable(t.rows);
+  const dateTxt = `${dLong(blk.report_date)} to ${dLong(blk.report_date)}`;
+
+  vd.innerHTML = isToday
+    ? `<b>${dLong(blk.report_date)}</b> &middot; as of <b>${asOf(blk.as_of)}</b> hrs &middot; partial day`
+    : `<b>${dLong(blk.report_date)}</b> &middot; complete day`;
+
+  let html = "";
+  if (isToday) {
+    html += `<div class="banner">Live position as of ${asOf(blk.as_of)} hrs. ${n0(tot.not_rpt)} of ${n0(tot.act_sch)} trains are not yet reported &mdash; PP% will change through the day. Last-year figures are for the full day.</div>`;
+    if (blk.report_date !== todayIso) html = `<div class="banner">This snapshot is from ${dLong(blk.report_date)}; today's live update has not run yet.</div>` + html;
+  }
+  html += `<div class="kpis">
+    ${kpi(isToday ? "PP% so far" : "On-date PP%", p2(d.cy), `LY ${p2(d.ly)} &nbsp;${dl(d.diff)}`)}
+    ${kpi(`Month (upto ${dShort(blk.report_date)})`, p2(m.cy), `LY ${p2(m.ly)} &nbsp;${dl(m.diff)}`)}
+    ${kpi("Financial Year", p2(f.cy), `LY ${p2(f.ly)} &nbsp;${dl(f.diff)}`)}
+    ${kpi("Reported", `${n0(tot.rpt)}<small> / ${n0(tot.act_sch)}</small>`, `Not reported ${n0(tot.not_rpt)} &middot; Excp. ${n0(tot.excp)}`)}
+    ${kpi("Lost Time (LT)", n0(tot.lt), `RT/NLT ${n0(tot.rt_nlt_total)} &middot; &gt;60 min ${n0(tot.lt_above_60)}`)}
+  </div>`;
+  html += `<div class="grid two">
+    <div class="card"><h3>Punctuality Performance [Mail Express] [BG]<span>${dateTxt}</span></h3><div class="body">${bigPie(tot, "Total (M)")}</div></div>
+    <div class="card"><h3>PP% &mdash; Current vs Last Year<span>${dateTxt}</span></h3><div class="body">${groupBars(tot, blk.report_date, isToday)}</div></div>
+  </div>`;
+  html += `<div class="card" style="margin-bottom:14px"><h3>Train-type composition<span>centre = on-date PP% &middot; hover a slice for counts</span></h3><div class="body">${miniDonuts(rows)}</div></div>`;
+  html += `<div class="grid two">
+    <div class="card"><h3>On-date PP% by train type<span>${isToday ? "so far" : dLong(blk.report_date)}</span></h3><div class="body">${typeBars(rows)}</div></div>
+    <div class="card"><h3>Lost-time break-up &mdash; Total (M)<span>LT trains by minutes late</span></h3><div class="body">${ltBars(tot)}</div></div>
+  </div>`;
+  html += `<div class="card" style="margin-bottom:14px"><h3>Train-type detail<span>${isToday ? `as of ${asOf(blk.as_of)} hrs` : dLong(blk.report_date)}</span></h3><div class="body" style="padding:0">${table(rows, isToday)}</div></div>`;
+  if (!isToday) html += `<div class="card" style="margin-bottom:14px"><h3>Trend &mdash; Total (M) on-date PP%<span>one point per completed day</span></h3><div class="body">${trendChart(FEED.trend)}</div></div>`;
+  view.innerHTML = html;
 }
 
-function renderPrev(l) {
-  const body = document.getElementById("prev-body"), note = document.getElementById("prev-note");
-  if (!l || !l.rows || !l.rows.length) { body.innerHTML = '<div class="empty">No previous-day data yet.</div>'; note.textContent = ""; return; }
-  const tot = l.rows.find(r => r.row_type === "total") || {};
-  const d = pp(tot, "pp_ondate_cy", "pp_ondate_ly");
-  const m = ppCum(tot, "pp_month_cy", "pp_month_ly");
-  const f = ppCum(tot, "pp_fy_cy", "pp_fy_ly");
-  note.innerHTML = `${fmtDate(l.report_date)} &middot; complete day &middot; LY = same date last year`;
-  body.innerHTML = `<div class="tiles">
-      ${tile("On-date PP%", pct(d.cy), `LY ${pct(d.ly)} &middot; ${delta(d.diff)}`)}
-      ${tile("Month cumulative PP%", pct(m.cy), `LY ${pct(m.ly)} &middot; ${delta(m.diff)}`)}
-      ${tile("Financial year PP%", pct(f.cy), `LY ${pct(f.ly)} &middot; ${delta(f.diff)}`)}
-      ${tile("Reported / LT", `${n0(tot.rpt)}<span style="font-size:15px;color:var(--text-muted)"> / ${n0(tot.lt)}</span>`, `Act. Sch. ${n0(tot.act_sch)} &middot; Not rpt. ${n0(tot.not_rpt)}`)}
-    </div>
-    <div class="grid2">
-      <div><h3 style="font-size:13px;margin:0 0 6px;color:var(--text-secondary)">On-date PP% by train type</h3><div id="bars"></div></div>
-      <div><h3 style="font-size:13px;margin:0 0 6px;color:var(--text-secondary)">Lost-time break-up, Total (M)</h3><div id="ltbreak"></div></div>
-    </div>
-    <h3 style="font-size:13px;margin:18px 0 6px;color:var(--text-secondary)">Train-type detail</h3>` + prevTable(l.rows);
-  barChart(document.getElementById("bars"), l.rows);
-  ltBreak(document.getElementById("ltbreak"), tot);
-}
-
-// LT break-up: sequential single hue (magnitude of lateness), one row
-function ltBreak(el, tot) {
-  const buckets = [["1–15", tot.lt_1_15], ["16–30", tot.lt_16_30], ["31–45", tot.lt_31_45], ["46–60", tot.lt_46_60], ["> 60", tot.lt_above_60]]
-    .map(([k, v]) => [k, isNum(v) ? v : 0]);
-  const max = Math.max(1, ...buckets.map(b => b[1]));
-  const shades = ["#9ec5f0", "#6aa6e8", "#3987e5", "#2a6bc0", "#1d4f91"];
-  const W = 560, rowH = 30, padL = 70, padR = 40, H = rowH * buckets.length + 6;
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Lost time trains by minutes late">`;
-  buckets.forEach(([k, v], i) => {
-    const y = i * rowH + 4, w = (v / max) * (W - padL - padR);
-    svg += `<text x="${padL - 8}" y="${y + 17}" text-anchor="end" font-size="12" fill="var(--text-secondary)">${k} min</text>`;
-    if (v > 0) svg += `<rect x="${padL}" y="${y + 5}" width="${Math.max(4, w)}" height="16" rx="4" fill="${shades[i]}"/>`;
-    svg += `<text x="${padL + Math.max(4, w) + 6}" y="${y + 17}" font-size="11.5" fill="var(--text-primary)">${n0(v)}</text>`;
-  });
-  el.innerHTML = `<div class="chart">${svg}</div><p class="note" style="margin:6px 0 0">Number of LT trains by minutes late. Total LT: ${n0(tot.lt)}.</p>`;
-}
-
-// ---------- load ----------
 async function load() {
-  const upd = document.getElementById("updated");
-  upd.textContent = "Updating…";
+  const st = document.getElementById("stamp");
+  st.textContent = "Updating…";
   try {
     const res = await fetch(FEED_URL, { cache: "no-store" });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "feed error");
-    renderToday(data.today);
-    renderPrev(data.latest);
-    lineChart(document.getElementById("trend-body"), data.trend);
-    const live = data.today && data.today.loaded_at ? fmtStamp(data.today.loaded_at) : "—";
-    upd.innerHTML = `Live data loaded: ${live}<br>Page refreshed: ${new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}`;
+    FEED = data;
+    render();
+    const live = data.today ? stampFmt(data.today.loaded_at) : "—";
+    const prev = data.latest ? stampFmt(data.latest.loaded_at) : "—";
+    st.innerHTML = `Prev-day data: ${prev}<br>Live data: ${live}`;
   } catch (e) {
-    upd.innerHTML = `<span class="err">Could not load data (${esc(e.message)}). Retrying in 5 min.</span>`;
+    st.innerHTML = `<span class="err">Could not load data (${esc(e.message)})</span>`;
+    if (!FEED) document.getElementById("view").innerHTML = '<div class="card"><div class="empty">Data could not be loaded. It will retry automatically.</div></div>';
   }
 }
+
+// ---------- controls ----------
+document.getElementById("btn-prev").addEventListener("click", () => { VIEW = "prev"; render(); });
+document.getElementById("btn-today").addEventListener("click", () => { VIEW = "today"; render(); });
 document.getElementById("refresh").addEventListener("click", load);
+const skinSel = document.getElementById("skin");
+function setSkin(v) { document.documentElement.setAttribute("data-skin", v); skinSel.value = v; try { localStorage.setItem("pam-skin", v); } catch (e) {} }
+let saved = "navy"; try { saved = localStorage.getItem("pam-skin") || "navy"; } catch (e) {}
+setSkin(saved);
+skinSel.addEventListener("change", e => setSkin(e.target.value));
+
 load();
 setInterval(load, REFRESH_MS);
 </script>
