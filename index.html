@@ -158,6 +158,28 @@
   #tip { position: fixed; pointer-events: none; z-index: 50; background: #111827; color: #fff; font-size: 12px; padding: 7px 10px; border-radius: 7px; opacity: 0; transition: opacity .08s; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.25); font-variant-numeric: tabular-nums; }
   footer { text-align: center; color: var(--muted); font-size: 11.5px; margin-top: 6px; }
   [hidden] { display: none !important; }
+
+  /* ---------- Suburban live tracking ---------- */
+  .subbar { display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .subbar h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; box-shadow: var(--shadow); }
+  .search input { font: inherit; border: 0; outline: 0; background: transparent; color: var(--ink); width: 170px; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12.5px; color: var(--ink-2); }
+  .chip b { color: var(--ink); }
+  .secs { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 14px; }
+  @media (min-width: 1100px) { .secs { grid-template-columns: 1fr 1fr; } }
+  .st { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 5px; letter-spacing: .02em; }
+  .st.run { background: #e3efff; color: #1553a6; } .st.arr { background: #e2f5e8; color: #0a6b2e; }
+  .st.yts { background: var(--grid); color: var(--ink-2); } .st.nd { background: #fde6e6; color: #a02424; }
+  [data-skin="dark"] .st.run { background: #16304f; color: #9cc6ff; } [data-skin="dark"] .st.arr { background: #12301d; color: #8fe0a8; } [data-skin="dark"] .st.nd { background: #3a1717; color: #f3a3a3; }
+  .late { font-weight: 700; }
+  .late.ok { color: var(--up); } .late.mid { color: #b06a00; } .late.bad { color: var(--down); }
+  [data-skin="dark"] .late.mid { color: #f0b44c; }
+  td.pos { text-align: left; white-space: normal; min-width: 170px; }
+  td.pos .nm { color: var(--muted); font-size: 11.5px; }
+  td.route { text-align: left; color: var(--ink-2); font-size: 12px; }
+  tr.hit td { background: color-mix(in srgb, var(--accent) 14%, transparent) !important; }
 </style>
 </head>
 <body>
@@ -191,6 +213,7 @@
     <div class="seg" role="group" aria-label="Choose view">
       <button type="button" id="btn-prev" aria-pressed="true">Previous Day</button>
       <button type="button" id="btn-today" aria-pressed="false"><span class="live"></span>Today (Live)</button>
+      <button type="button" id="btn-sub" aria-pressed="false"><span class="live"></span>Suburban Trains (Live)</button>
     </div>
     <div class="viewdate" id="viewdate">&nbsp;</div>
   </div>
@@ -457,6 +480,9 @@ function render() {
   const view = document.getElementById("view"), vd = document.getElementById("viewdate");
   document.getElementById("btn-prev").setAttribute("aria-pressed", VIEW === "prev");
   document.getElementById("btn-today").setAttribute("aria-pressed", VIEW === "today");
+  document.getElementById("btn-sub").setAttribute("aria-pressed", VIEW === "sub");
+  setTitle();
+  if (VIEW === "sub") return renderSub();
   if (!FEED) return;
   const isToday = VIEW === "today";
   const blk = isToday ? FEED.today : FEED.latest;
@@ -508,7 +534,7 @@ async function load() {
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "feed error");
     FEED = data;
-    render();
+    if (VIEW !== "sub") render();
     const live = data.today ? stampFmt(data.today.loaded_at) : "—";
     const prev = data.latest ? stampFmt(data.latest.loaded_at) : "—";
     st.innerHTML = `Prev-day data: ${prev}<br>Live data: ${live}`;
@@ -518,18 +544,105 @@ async function load() {
   }
 }
 
+// ---------- suburban live tracking ----------
+const SUB_URL = FEED_URL + "?feed=suburban";
+let SUB = null, SUB_ERR = "", SUB_Q = "";
+const TITLES = {
+  pam: ["Punctuality Performance &mdash; Mail Express [BG]", "Delhi Division &middot; Mail-Express Group (M) &middot; Source: ICMS PAM"],
+  sub: ["LIVE SUBURBAN TRAINS Tracking", "Delhi Division &middot; Important suburban trains &middot; Source: ICMS Train Running (COA)"],
+};
+function setTitle() {
+  const t = TITLES[VIEW === "sub" ? "sub" : "pam"];
+  document.querySelector(".brand h1").innerHTML = t[0];
+  document.querySelector(".brand .sub").innerHTML = t[1];
+  document.title = VIEW === "sub" ? "LIVE Suburban Trains Tracking - DLI" : "Mail-Express Punctuality Dashboard";
+  document.querySelector("footer").hidden = VIEW === "sub";
+}
+const tOnly = s => { const m = /(\d{1,2}:\d{2})/.exec(s || ""); return m ? m[1] : "—"; };
+function lateCell(r) {
+  if (r.status === "Yet to start" || r.status === "No data" || r.late === null || r.late === undefined || isNaN(r.late)) return '<span class="dash">—</span>';
+  const v = Number(r.late);
+  if (v === 0) return '<span class="late ok">RT</span>';
+  if (v < 0) return `<span class="late ok">${v} <small>early</small></span>`;
+  return `<span class="late ${v > 15 ? "bad" : "mid"}">${v}</span>`;
+}
+function statusTag(s) {
+  const c = { Running: "run", Arrived: "arr", "Yet to start": "yts" }[s] || "nd";
+  return `<span class="st ${c}">${esc(s || "No data")}</span>`;
+}
+function posCell(r) {
+  if (r.status === "No data" || !r.status) return '<span class="dash">Not available in ICMS</span>';
+  if (r.status === "Yet to start") return `Sch. dep <b>${esc(r.stn_code)}</b> ${tOnly(r.sch)}`;
+  const ev = r.event === "Dep" ? "Dep" : "Arr";
+  return `<b>${esc(r.stn_code)}</b> <span class="nm">${esc(r.stn_name || "")}</span><br>${ev} ${tOnly(r.act)} <span class="nm">(Sch ${tOnly(r.sch)})</span>`;
+}
+function renderSub() {
+  const view = document.getElementById("view"), vd = document.getElementById("viewdate");
+  if (!SUB) {
+    vd.innerHTML = "&nbsp;";
+    view.innerHTML = `<div class="card"><div class="empty">${SUB_ERR ? "Suburban data could not be loaded. It will retry automatically." : "Loading&hellip;"}</div></div>`;
+    return;
+  }
+  const trains = SUB.trains || [];
+  vd.innerHTML = SUB.as_of ? `Position as of <b>${esc(SUB.as_of.slice(11, 16))}</b> hrs, <b>${dLong(SUB.as_of.slice(0, 10))}</b> &middot; updated every 30 min` : "&nbsp;";
+  const q = SUB_Q.replace(/\D/g, "");
+  const cnt = s => trains.filter(t => t.status === s).length;
+  let html = `<div class="subbar">
+    <label class="search" title="Search by train number"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="subq" inputmode="numeric" placeholder="Search train no." value="${esc(SUB_Q)}" aria-label="Search by train number"></label>
+    <div class="chips"><span class="chip">Running <b>${cnt("Running")}</b></span><span class="chip">Arrived <b>${cnt("Arrived")}</b></span>
+      <span class="chip">Yet to start <b>${cnt("Yet to start")}</b></span><span class="chip">No data <b>${trains.filter(t => !["Running", "Arrived", "Yet to start"].includes(t.status)).length}</b></span></div></div>`;
+  if (SUB.as_of) {
+    const age = (Date.now() - new Date(SUB.as_of.replace(" ", "T") + ":00+05:30").getTime()) / 60000;
+    if (age > 45) html += `<div class="banner">This position is ${Math.round(age)} minutes old &mdash; the 30-minute update has not run since ${esc(SUB.as_of.slice(11, 16))} hrs.</div>`;
+  }
+  const sections = [...new Set(trains.map(t => t.section))];
+  let shown = 0, cards = "";
+  sections.forEach(sec => {
+    const list = trains.filter(t => t.section === sec && (!q || String(t.train).includes(q)))
+      .sort((a, b) => (a.shift || "").localeCompare(b.shift || "") * -1 || (a.from_time || "").localeCompare(b.from_time || ""));
+    if (!list.length) return;
+    shown += list.length;
+    cards += `<div class="card"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div class="tbl"><table>
+      <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th></tr></thead><tbody>
+      ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></td>
+        <td class="route">${esc(t.from_stn)} ${esc(t.from_time || "")} &rarr; ${esc(t.to_stn)} ${esc(t.to_time || "")}</td>
+        <td class="pos">${posCell(t)}</td><td>${lateCell(t)}</td><td>${statusTag(t.status)}</td></tr>`).join("")}
+      </tbody></table></div></div>`;
+  });
+  html += shown ? `<div class="secs">${cards}</div>` : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
+  html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
+  view.innerHTML = html;
+  const box = document.getElementById("subq");
+  box.addEventListener("input", e => { SUB_Q = e.target.value; const pos = e.target.selectionStart; renderSub(); const b = document.getElementById("subq"); b.focus(); b.setSelectionRange(pos, pos); });
+}
+async function loadSub() {
+  try {
+    const res = await fetch(SUB_URL, { cache: "no-store" });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "feed error");
+    SUB = data; SUB_ERR = "";
+  } catch (e) { SUB_ERR = e.message; }
+  if (VIEW === "sub") render();
+}
+
 // ---------- controls ----------
-document.getElementById("btn-prev").addEventListener("click", () => { VIEW = "prev"; render(); });
-document.getElementById("btn-today").addEventListener("click", () => { VIEW = "today"; render(); });
-document.getElementById("refresh").addEventListener("click", load);
+document.getElementById("btn-prev").addEventListener("click", () => { VIEW = "prev"; history.replaceState(null, "", "#"); render(); });
+document.getElementById("btn-today").addEventListener("click", () => { VIEW = "today"; history.replaceState(null, "", "#"); render(); });
+document.getElementById("btn-sub").addEventListener("click", () => { VIEW = "sub"; history.replaceState(null, "", "#suburban"); render(); loadSub(); });
+document.getElementById("refresh").addEventListener("click", () => { load(); loadSub(); });
 const skinSel = document.getElementById("skin");
 function setSkin(v) { document.documentElement.setAttribute("data-skin", v); skinSel.value = v; try { localStorage.setItem("pam-skin", v); } catch (e) {} }
 let saved = "navy"; try { saved = localStorage.getItem("pam-skin") || "navy"; } catch (e) {}
 setSkin(saved);
 skinSel.addEventListener("change", e => setSkin(e.target.value));
 
+if (location.hash === "#suburban") VIEW = "sub";
+render();
 load();
+loadSub();
 setInterval(load, REFRESH_MS);
+setInterval(loadSub, REFRESH_MS);
 </script>
 </body>
 </html>
