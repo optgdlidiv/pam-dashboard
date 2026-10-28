@@ -594,7 +594,7 @@ function posCell(r) {
 function origCell(r) {
   if (!r.origin) return '<span class="dash">—</span>';
   const head = `<b>${esc(r.origin)}</b> <span class="nm">${esc(r.orig_name || "")}</span>`;
-  if (r.orig_sch === undefined) return `${head}<br><span class="nm">departure details not in feed yet</span>`;
+  if (!r.orig_sch && !r.orig_act) return `${head}<br><span class="nm">departure details not received yet</span>`;
   if (!r.orig_act) return `${head}<br><span class="nm">Sch. dep ${tOnly(r.orig_sch)} &middot; not departed</span>`;
   const v = r.orig_late === null || r.orig_late === undefined ? null : Number(r.orig_late);
   const lt = v === null || isNaN(v) ? "" : v === 0 ? ' <span class="late ok">RT</span>' : v < 0 ? ` <span class="late ok">${v}</span>` : ` <span class="late ${v > 15 ? "bad" : "mid"}">+${v}</span>`;
