@@ -165,10 +165,12 @@
   .search { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; box-shadow: var(--shadow); }
   .search input { font: inherit; border: 0; outline: 0; background: transparent; color: var(--ink); width: 170px; font-variant-numeric: tabular-nums; }
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .xls { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; box-shadow: var(--shadow); }
+  .xls:hover { filter: brightness(1.08); }
   .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12.5px; color: var(--ink-2); }
   .chip b { color: var(--ink); }
   .secs { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 14px; }
-  @media (min-width: 1100px) { .secs { grid-template-columns: 1fr 1fr; } }
+  @media (min-width: 1700px) { .secs { grid-template-columns: 1fr 1fr; } }
   .st { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 5px; letter-spacing: .02em; }
   .st.run { background: #e3efff; color: #1553a6; } .st.arr { background: #e2f5e8; color: #0a6b2e; }
   .st.yts { background: var(--grid); color: var(--ink-2); } .st.nd { background: #fde6e6; color: #a02424; }
@@ -576,6 +578,14 @@ function posCell(r) {
   const ev = r.event === "Dep" ? "Dep" : "Arr";
   return `<b>${esc(r.stn_code)}</b> <span class="nm">${esc(r.stn_name || "")}</span><br>${ev} ${tOnly(r.act)} <span class="nm">(Sch ${tOnly(r.sch)})</span>`;
 }
+function origCell(r) {
+  if (!r.origin) return '<span class="dash">—</span>';
+  const head = `<b>${esc(r.origin)}</b> <span class="nm">${esc(r.orig_name || "")}</span>`;
+  if (!r.orig_act) return `${head}<br><span class="nm">Sch. dep ${tOnly(r.orig_sch)} &middot; not departed</span>`;
+  const v = r.orig_late === null || r.orig_late === undefined ? null : Number(r.orig_late);
+  const lt = v === null || isNaN(v) ? "" : v === 0 ? ' <span class="late ok">RT</span>' : v < 0 ? ` <span class="late ok">${v}</span>` : ` <span class="late ${v > 15 ? "bad" : "mid"}">+${v}</span>`;
+  return `${head}<br>Dep ${tOnly(r.orig_act)} <span class="nm">(Sch ${tOnly(r.orig_sch)})</span>${lt}`;
+}
 function renderSub() {
   const view = document.getElementById("view"), vd = document.getElementById("viewdate");
   if (!SUB) {
@@ -590,6 +600,7 @@ function renderSub() {
   let html = `<div class="subbar">
     <label class="search" title="Search by train number"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input id="subq" inputmode="numeric" placeholder="Search train no." value="${esc(SUB_Q)}" aria-label="Search by train number"></label>
+    <button type="button" class="xls" id="subxls" title="Download the trains shown below as an Excel file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download Excel</button>
     <div class="chips"><span class="chip">Running <b>${cnt("Running")}</b></span><span class="chip">Arrived <b>${cnt("Arrived")}</b></span>
       <span class="chip">Yet to start <b>${cnt("Yet to start")}</b></span><span class="chip">No data <b>${trains.filter(t => !["Running", "Arrived", "Yet to start"].includes(t.status)).length}</b></span></div></div>`;
   if (SUB.as_of) {
@@ -604,17 +615,79 @@ function renderSub() {
     if (!list.length) return;
     shown += list.length;
     cards += `<div class="card"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div class="tbl"><table>
-      <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th></tr></thead><tbody>
+      <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th></tr></thead><tbody>
       ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></td>
         <td class="route">${esc(t.from_stn)} ${esc(t.from_time || "")} &rarr; ${esc(t.to_stn)} ${esc(t.to_time || "")}</td>
-        <td class="pos">${posCell(t)}</td><td>${lateCell(t)}</td><td>${statusTag(t.status)}</td></tr>`).join("")}
+        <td class="pos">${origCell(t)}</td><td class="pos">${posCell(t)}</td><td>${lateCell(t)}</td><td>${statusTag(t.status)}</td></tr>`).join("")}
       </tbody></table></div></div>`;
   });
   html += shown ? `<div class="secs">${cards}</div>` : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
   html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
   view.innerHTML = html;
   const box = document.getElementById("subq");
+  document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections));
   box.addEventListener("input", e => { SUB_Q = e.target.value; const pos = e.target.selectionStart; renderSub(); const b = document.getElementById("subq"); b.focus(); b.setSelectionRange(pos, pos); });
+}
+// ---------- one-click Excel (.xlsx) download - built in the browser, no add-ons ----------
+const CRC_T = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files) {   // files: [{name, data: Uint8Array}] - stored (no compression)
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const u16 = v => [v & 255, (v >>> 8) & 255], u32 = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  files.forEach(f => {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const loc = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0)]);
+    parts.push(loc, nm, f.data);
+    cen.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += loc.length + nm.length + sz;
+  });
+  const cenLen = cen.reduce((a, b) => a + b.length, 0);
+  const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cenLen), ...u32(off), ...u16(0)]);
+  return new Blob([...parts, ...cen, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+function xlsxBlob(title, head, rows, widths) {
+  const x = v => String(v ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+  const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const cell = (v, r, c, st) => (typeof v === "number" && isFinite(v))
+    ? `<c r="${col(c)}${r}"${st ? ` s="${st}"` : ""}><v>${v}</v></c>`
+    : `<c r="${col(c)}${r}" t="inlineStr"${st ? ` s="${st}"` : ""}><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+  const all = [[title], [], head, ...rows];
+  const sd = all.map((row, i) => `<row r="${i + 1}">${row.map((v, j) => cell(v, i + 1, j, i === 0 ? 1 : i === 2 ? 2 : 0)).join("")}</row>`).join("");
+  const cols = `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`;
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData><autoFilter ref="A3:${col(head.length - 1)}${all.length}"/></worksheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF164277"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const E = s => new TextEncoder().encode(s);
+  return zip([
+    { name: "[Content_Types].xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`) },
+    { name: "_rels/.rels", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`) },
+    { name: "xl/workbook.xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Suburban Live" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'Suburban Live'!$A$3:$${col(head.length - 1)}$${all.length}</definedName></definedNames></workbook>`) },
+    { name: "xl/_rels/workbook.xml.rels", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`) },
+    { name: "xl/worksheets/sheet1.xml", data: E(sheet) },
+    { name: "xl/styles.xml", data: E(styles) },
+  ]);
+}
+function downloadSubXlsx(list, sections) {
+  const order = new Map(sections.map((s, i) => [s, i]));
+  const rows = list.slice().sort((a, b) => order.get(a.section) - order.get(b.section) || (b.shift || "").localeCompare(a.shift || "") || (a.from_time || "").localeCompare(b.from_time || ""))
+    .map(t => {
+      const live = t.status === "Running" || t.status === "Arrived";
+      const late = live ? (t.late === null || t.late === undefined || isNaN(t.late) ? "" : Number(t.late)) : "";
+      const ol = t.orig_act && t.orig_late !== null && t.orig_late !== undefined && !isNaN(t.orig_late) ? Number(t.orig_late) : "";
+      return [t.section, t.train, t.shift, `${t.from_stn || ""} ${t.from_time || ""}`.trim(), `${t.to_stn || ""} ${t.to_time || ""}`.trim(),
+        t.origin || "", t.orig_name || "", tOnly(t.orig_sch) === "—" ? "" : tOnly(t.orig_sch), t.orig_act ? tOnly(t.orig_act) : "", ol,
+        t.status || "No data", live ? (t.stn_code || "") : "", live ? (t.stn_name || "") : "",
+        live ? (t.event || "") : "", live ? tOnly(t.sch) : "", live ? tOnly(t.act) : "", late];
+    });
+  const head = ["Section", "Train No.", "Shift", "From (DLI list)", "To (DLI list)", "Origin", "Origin name", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)",
+    "Status", "Current stn", "Current stn name", "Arr/Dep", "Sch. time", "Act. time", "Late (min)"];
+  const asof = SUB.as_of || "";
+  const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${SUB_Q ? " - search: " + SUB_Q : ""}`;
+  const blob = xlsxBlob(title, head, rows, [11, 10, 9, 15, 15, 8, 24, 11, 11, 10, 12, 10, 24, 8, 9, 9, 9]);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `LIVE_Suburban_${asof ? asof.replace(/[-: ]/g, "").replace(/^(\d{8})(\d{4})$/, "$1_$2") : "now"}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 async function loadSub() {
   try {
