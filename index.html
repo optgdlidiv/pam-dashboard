@@ -185,8 +185,17 @@
   table.sub { table-layout: fixed; width: 100%; }
   table.sub th, table.sub td { white-space: normal; overflow-wrap: anywhere; padding: 8px 8px; vertical-align: top; }
   table.sub th { font-size: 10.5px; }
-  table.sub col.c-tr { width: 10%; } table.sub col.c-rt { width: 16%; } table.sub col.c-or { width: 25%; }
-  table.sub col.c-cp { width: 27%; } table.sub col.c-lt { width: 9%; } table.sub col.c-st { width: 13%; }
+  table.sub col.c-tr { width: 9%; } table.sub col.c-rt { width: 14%; } table.sub col.c-or { width: 22%; }
+  table.sub col.c-cp { width: 24%; } table.sub col.c-lt { width: 8%; } table.sub col.c-st { width: 11%; } table.sub col.c-rm { width: 12%; }
+  .rmk { font: inherit; font-size: 11.5px; font-weight: 650; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 6px; padding: 2px 8px; cursor: pointer; white-space: nowrap; }
+  .rmk:hover { background: var(--accent); color: var(--accent-ink); }
+  #rmkbox { position: fixed; inset: 0; background: rgba(10,20,35,.45); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+  #rmkbox.on { display: flex; }
+  #rmkbox .in { background: var(--card); color: var(--ink); border-radius: 12px; max-width: 900px; width: 100%; max-height: 85vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+  #rmkbox h4 { margin: 0; padding: 12px 16px; background: var(--card-head); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  #rmkbox h4 button { font: inherit; border: 0; background: transparent; color: var(--ink-2); font-size: 20px; cursor: pointer; line-height: 1; }
+  #rmkbox table td, #rmkbox table th { white-space: normal; text-align: left; vertical-align: top; }
+  #rmkbox tr.dli td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   @media (max-width: 760px) {
     table.sub, table.sub tbody, table.sub tr, table.sub td { display: block; width: 100%; }
     table.sub colgroup, table.sub thead { display: none; }
@@ -603,6 +612,32 @@ function posCell(r) {
   const ev = r.event === "Dep" ? "Dep" : "Arr";
   return `<b>${esc(r.stn_code)}</b> <span class="nm">${esc(r.stn_name || "")}</span><br>${ev} ${tOnly(r.act)} <span class="nm">(Sch ${tOnly(r.sch)})</span>`;
 }
+// ---------- remarks (detentions from ICMS TS/1002C) ----------
+const DET_HEADS = { ENG: "Engineering", ENGG: "Engineering", DELC: "Direct Electric", IELC: "Indirect Electric", DCW: "Direct C&W",
+  ICW: "Indirect C&W", ST: "Signal & Telecom", PBOL: "Planned Block Open Line", CNST: "Construction", ACP: "Alarm Chain Pulling",
+  LO: "Law & Order", RUNO: "Run Over", INC: "Incident", PATH: "Path" };
+function dets(t) {
+  if (!t || !t.dets) return [];
+  if (Array.isArray(t.dets)) return t.dets;
+  try { const d = JSON.parse(t.dets); return Array.isArray(d) ? d : []; } catch (e) { return []; }
+}
+function detText(d) { return `${d.type || ""} ${d.code || ""}/${d.sub || ""} ${d.div || ""} ${d.from || ""}-${d.to || ""} ${d.mins ?? ""}' : ${d.remarks || ""}`.replace(/\s+/g, " ").trim(); }
+function showRemarks(t) {
+  const list = dets(t);
+  let box = document.getElementById("rmkbox");
+  if (!box) {
+    box = document.createElement("div"); box.id = "rmkbox";
+    box.addEventListener("click", e => { if (e.target === box || e.target.closest("[data-close]")) box.classList.remove("on"); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") box.classList.remove("on"); });
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `<div class="in" role="dialog" aria-label="Remarks"><h4><span>Remarks &mdash; ${esc(t.train)} <span class="nm" style="font-weight:500;color:var(--muted)">${esc(t.section)} &middot; ${esc(t.status || "")}${t.late ? " &middot; late " + esc(t.late) : ""}</span></span><button type="button" data-close aria-label="Close">&times;</button></h4>
+    <div class="tbl"><table><thead><tr><th>P/S</th><th>Det. Code</th><th>Sub Code</th><th>Div.</th><th>From&ndash;To</th><th>Min</th><th>Remarks</th></tr></thead><tbody>
+    ${list.map(d => `<tr class="${d.div === "DLI" ? "dli" : ""}"><td><b>${esc(d.type || "")}</b></td><td>${esc(d.code || "")}<div class="nm" style="color:var(--muted);font-size:11px">${esc(DET_HEADS[d.code] || "")}</div></td>
+      <td>${esc(d.sub || "")}</td><td>${esc(d.div || "")}</td><td>${esc(d.from || "")}&ndash;${esc(d.to || "")}</td><td>${esc(d.mins ?? "")}</td><td>${esc(d.remarks || "")}</td></tr>`).join("")}
+    </tbody></table></div><div style="padding:8px 16px;font-size:11.5px;color:var(--muted)">Source: ICMS Train Status Monitoring (TS/1002C). P = primary, S = secondary. DLI division rows highlighted.</div></div>`;
+  box.classList.add("on");
+}
 function origCell(r) {
   if (!r.origin) return '<span class="dash">—</span>';
   const head = `<b>${esc(r.origin)}</b> <span class="nm">${esc(r.orig_name || "")}</span>`;
@@ -644,12 +679,13 @@ function renderSub() {
     if (!list.length) return;
     shown += list.length;
     cards += `<div class="card"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
-      <colgroup><col class="c-tr"><col class="c-rt"><col class="c-or"><col class="c-cp"><col class="c-lt"><col class="c-st"></colgroup>
-      <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th></tr></thead><tbody>
+      <colgroup><col class="c-tr"><col class="c-rt"><col class="c-or"><col class="c-cp"><col class="c-lt"><col class="c-st"><col class="c-rm"></colgroup>
+      <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
       ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td data-l="Train"><span><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></span></td>
         <td class="route" data-l="Route (DLI list)"><span>${esc(t.from_stn)} ${esc(t.from_time || "")} &rarr; ${esc(t.to_stn)} ${esc(t.to_time || "")}</span></td>
         <td class="pos" data-l="Started from"><span>${origCell(t)}</span></td><td class="pos" data-l="Current position"><span>${posCell(t)}</span></td>
-        <td data-l="Late (min)"><span>${lateCell(t)}</span></td><td data-l="Status"><span>${statusTag(t.status)}</span></td></tr>`).join("")}
+        <td data-l="Late (min)"><span>${lateCell(t)}</span></td><td data-l="Status"><span>${statusTag(t.status)}</span></td>
+        <td data-l="Remarks"><span>${dets(t).length ? `<button type="button" class="rmk" data-train="${esc(t.train)}">Remarks (${dets(t).length})</button>` : ""}</span></td></tr>`).join("")}
       </tbody></table></div></div>`;
   });
   html += shown ? `<div class="secs">${cards}</div>` : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
@@ -658,6 +694,7 @@ function renderSub() {
   const box = document.getElementById("subq");
   document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections, SUB.as_of, SUB_Q ? "search: " + SUB_Q : ""));
   document.getElementById("subday").addEventListener("change", e => { SUB_DAY = e.target.value; });
+  view.querySelectorAll(".rmk").forEach(b => b.addEventListener("click", () => showRemarks(trains.find(t => String(t.train) === b.dataset.train))));
   document.getElementById("subdayxls").addEventListener("click", downloadSavedDay);
   box.addEventListener("input", e => { SUB_Q = e.target.value; const pos = e.target.selectionStart; renderSub(); const b = document.getElementById("subq"); b.focus(); b.setSelectionRange(pos, pos); });
 }
@@ -729,10 +766,11 @@ function downloadSubXlsx(list, sections, asof, note) {
       const hm = v => (tOnly(v) === "—" ? "" : tOnly(v));
       return [t.section, t.train, t.shift, `${t.from_stn || ""} ${t.from_time || ""}`.trim(), `${t.to_stn || ""} ${t.to_time || ""}`.trim(),
         t.origin || "", hm(t.orig_sch), t.orig_act ? hm(t.orig_act) : "", t.orig_act ? rtLabel(t.orig_late, false) : "",
-        live ? (t.stn_code || "") : "", live ? hm(t.act) : "", live ? rtLabel(t.late, t.status === "Arrived") : ""];
+        live ? (t.stn_code || "") : "", live ? hm(t.act) : "", live ? rtLabel(t.late, t.status === "Arrived") : "",
+        dets(t).map(detText).join(" | ")];
     });
-  const head = ["Section", "Train No.", "Shift", "From", "To", "Origin", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)", "Current stn", "Act. time", "Late (min)"];
-  const widths = [11, 10, 9.7, 18, 15.4, 11, 19.1, 19, 20.3, 10, 13.6, 14.6];
+  const head = ["Section", "Train No.", "Shift", "From", "To", "Origin", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)", "Current stn", "Act. time", "Late (min)", "Remarks"];
+  const widths = [11, 10, 9.7, 18, 15.4, 11, 19.1, 19, 20.3, 10, 13.6, 14.6, 90];
   asof = asof || "";
   const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${note ? " - " + note : ""}`;
   const blob = xlsxBlob(title, head, rows, widths);
