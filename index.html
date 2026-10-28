@@ -574,11 +574,20 @@ function setTitle() {
   document.querySelector("footer").hidden = VIEW === "sub";
 }
 const tOnly = s => { const m = /(\d{1,2}:\d{2})/.exec(s || ""); return m ? m[1] : "—"; };
+// RT rule (Dom, 28-Oct): late <= 0 -> "RT"; arrived at destination 1-15 min late -> "13/RT" (counted right time)
+function rtLabel(v, arrived) {
+  if (v === null || v === undefined || v === "" || isNaN(v)) return "";
+  v = Number(v);
+  if (v <= 0) return "RT";
+  if (arrived && v <= 15) return `${v}/RT`;
+  return v;
+}
 function lateCell(r) {
   if (r.status === "Yet to start" || r.status === "No data" || r.late === null || r.late === undefined || isNaN(r.late)) return '<span class="dash">—</span>';
   const v = Number(r.late);
+  if (v < 0) return `<span class="late ok">RT</span> <small class="nm">(${-v} early)</small>`;
   if (v === 0) return '<span class="late ok">RT</span>';
-  if (v < 0) return `<span class="late ok">${v} <small>early</small></span>`;
+  if (r.status === "Arrived" && v <= 15) return `<span class="late ok">${v}/RT</span>`;
   return `<span class="late ${v > 15 ? "bad" : "mid"}">${v}</span>`;
 }
 function statusTag(s) {
@@ -597,7 +606,7 @@ function origCell(r) {
   if (!r.orig_sch && !r.orig_act) return `${head}<br><span class="nm">departure details not received yet</span>`;
   if (!r.orig_act) return `${head}<br><span class="nm">Sch. dep ${tOnly(r.orig_sch)} &middot; not departed</span>`;
   const v = r.orig_late === null || r.orig_late === undefined ? null : Number(r.orig_late);
-  const lt = v === null || isNaN(v) ? "" : v === 0 ? ' <span class="late ok">RT</span>' : v < 0 ? ` <span class="late ok">${v}</span>` : ` <span class="late ${v > 15 ? "bad" : "mid"}">+${v}</span>`;
+  const lt = v === null || isNaN(v) ? "" : v <= 0 ? ' <span class="late ok">RT</span>' : ` <span class="late ${v > 15 ? "bad" : "mid"}">+${v}</span>`;
   return `${head}<br>Dep ${tOnly(r.orig_act)} <span class="nm">(Sch ${tOnly(r.orig_sch)})</span>${lt}`;
 }
 function renderSub() {
@@ -687,18 +696,16 @@ function downloadSubXlsx(list, sections) {
   const rows = list.slice().sort((a, b) => order.get(a.section) - order.get(b.section) || (b.shift || "").localeCompare(a.shift || "") || (a.from_time || "").localeCompare(b.from_time || ""))
     .map(t => {
       const live = t.status === "Running" || t.status === "Arrived";
-      const late = live ? (t.late === null || t.late === undefined || isNaN(t.late) ? "" : Number(t.late)) : "";
-      const ol = t.orig_act && t.orig_late !== null && t.orig_late !== undefined && !isNaN(t.orig_late) ? Number(t.orig_late) : "";
+      const hm = v => (tOnly(v) === "—" ? "" : tOnly(v));
       return [t.section, t.train, t.shift, `${t.from_stn || ""} ${t.from_time || ""}`.trim(), `${t.to_stn || ""} ${t.to_time || ""}`.trim(),
-        t.origin || "", t.orig_name || "", tOnly(t.orig_sch) === "—" ? "" : tOnly(t.orig_sch), t.orig_act ? tOnly(t.orig_act) : "", ol,
-        t.status || "No data", live ? (t.stn_code || "") : "", live ? (t.stn_name || "") : "",
-        live ? (t.event || "") : "", live ? tOnly(t.sch) : "", live ? tOnly(t.act) : "", late];
+        t.origin || "", hm(t.orig_sch), t.orig_act ? hm(t.orig_act) : "", t.orig_act ? rtLabel(t.orig_late, false) : "",
+        live ? (t.stn_code || "") : "", live ? hm(t.act) : "", live ? rtLabel(t.late, t.status === "Arrived") : ""];
     });
-  const head = ["Section", "Train No.", "Shift", "From (DLI list)", "To (DLI list)", "Origin", "Origin name", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)",
-    "Status", "Current stn", "Current stn name", "Arr/Dep", "Sch. time", "Act. time", "Late (min)"];
+  const head = ["Section", "Train No.", "Shift", "From", "To", "Origin", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)", "Current stn", "Act. time", "Late (min)"];
+  const widths = [11, 10, 9.7, 18, 15.4, 11, 19.1, 19, 20.3, 10, 13.6, 14.6];
   const asof = SUB.as_of || "";
   const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${SUB_Q ? " - search: " + SUB_Q : ""}`;
-  const blob = xlsxBlob(title, head, rows, [11, 10, 9, 15, 15, 8, 24, 11, 11, 10, 12, 10, 24, 8, 9, 9, 9]);
+  const blob = xlsxBlob(title, head, rows, widths);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `LIVE_Suburban_${asof ? asof.replace(/[-: ]/g, "").replace(/^(\d{8})(\d{4})$/, "$1_$2") : "now"}.xlsx`;
