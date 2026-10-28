@@ -167,6 +167,9 @@
   .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
   .xls { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; box-shadow: var(--shadow); }
   .xls:hover { filter: brightness(1.08); }
+  .xls.alt { background: var(--card); color: var(--ink); border: 1px solid var(--border); }
+  .saved { display: inline-flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 4px 6px 4px 10px; box-shadow: var(--shadow); font-size: 12.5px; color: var(--ink-2); }
+  .saved select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
   .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12.5px; color: var(--ink-2); }
   .chip b { color: var(--ink); }
   .secs { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 14px; }
@@ -561,7 +564,7 @@ async function load() {
 
 // ---------- suburban live tracking ----------
 const SUB_URL = FEED_URL + "?feed=suburban";
-let SUB = null, SUB_ERR = "", SUB_Q = "";
+let SUB = null, SUB_ERR = "", SUB_Q = "", SUB_DATES = null, SUB_DAY = "";
 const TITLES = {
   pam: ["Punctuality Performance &mdash; Mail Express [BG]", "Delhi Division &middot; Mail-Express Group (M) &middot; Source: ICMS PAM"],
   sub: ["LIVE SUBURBAN TRAINS Tracking", "Delhi Division &middot; Important suburban trains &middot; Source: ICMS Train Running (COA)"],
@@ -624,6 +627,9 @@ function renderSub() {
     <label class="search" title="Search by train number"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input id="subq" inputmode="numeric" placeholder="Search train no." value="${esc(SUB_Q)}" aria-label="Search by train number"></label>
     <button type="button" class="xls" id="subxls" title="Download the trains shown below as an Excel file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download Excel</button>
+    <span class="saved" title="Final position of each day, saved at 23:45">Saved day
+      <select id="subday" aria-label="Saved day">${SUB_DATES === null ? '<option value="">loading…</option>' : SUB_DATES.length ? SUB_DATES.map(d => `<option value="${d}"${d === SUB_DAY ? " selected" : ""}>${dLong(d)}</option>`).join("") : '<option value="">none yet</option>'}</select>
+      <button type="button" class="xls alt" id="subdayxls"${SUB_DATES && SUB_DATES.length ? "" : " disabled"}>Excel</button></span>
     <div class="chips"><span class="chip">Running <b>${cnt("Running")}</b></span><span class="chip">Arrived <b>${cnt("Arrived")}</b></span>
       <span class="chip">Yet to start <b>${cnt("Yet to start")}</b></span><span class="chip">No data <b>${trains.filter(t => !["Running", "Arrived", "Yet to start"].includes(t.status)).length}</b></span></div></div>`;
   if (SUB.as_of) {
@@ -650,7 +656,9 @@ function renderSub() {
   html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
   view.innerHTML = html;
   const box = document.getElementById("subq");
-  document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections));
+  document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections, SUB.as_of, SUB_Q ? "search: " + SUB_Q : ""));
+  document.getElementById("subday").addEventListener("change", e => { SUB_DAY = e.target.value; });
+  document.getElementById("subdayxls").addEventListener("click", downloadSavedDay);
   box.addEventListener("input", e => { SUB_Q = e.target.value; const pos = e.target.selectionStart; renderSub(); const b = document.getElementById("subq"); b.focus(); b.setSelectionRange(pos, pos); });
 }
 // ---------- one-click Excel (.xlsx) download - built in the browser, no add-ons ----------
@@ -691,7 +699,29 @@ function xlsxBlob(title, head, rows, widths) {
     { name: "xl/styles.xml", data: E(styles) },
   ]);
 }
-function downloadSubXlsx(list, sections) {
+async function downloadSavedDay() {
+  const day = document.getElementById("subday").value;
+  if (!day) return;
+  const btn = document.getElementById("subdayxls"), txt = btn.textContent;
+  btn.textContent = "…"; btn.disabled = true;
+  try {
+    const res = await fetch(`${FEED_URL}?feed=suburban_day&date=${day}`, { cache: "no-store" });
+    const d = await res.json();
+    if (!d.ok || !d.trains || !d.trains.length) throw new Error(d.error || "no data saved for this day");
+    downloadSubXlsx(d.trains, [...new Set(d.trains.map(t => t.section))], d.as_of, "final position of the day");
+  } catch (e) { alert(`Could not download ${dLong(day)}: ${e.message}`); }
+  btn.textContent = txt; btn.disabled = false;
+}
+async function loadSubDates() {
+  try {
+    const res = await fetch(`${FEED_URL}?feed=suburban_dates`, { cache: "no-store" });
+    const d = await res.json();
+    SUB_DATES = d.ok && Array.isArray(d.dates) ? d.dates : [];
+  } catch (e) { SUB_DATES = []; }
+  if (!SUB_DAY && SUB_DATES.length) SUB_DAY = SUB_DATES[0];
+  if (VIEW === "sub") render();
+}
+function downloadSubXlsx(list, sections, asof, note) {
   const order = new Map(sections.map((s, i) => [s, i]));
   const rows = list.slice().sort((a, b) => order.get(a.section) - order.get(b.section) || (b.shift || "").localeCompare(a.shift || "") || (a.from_time || "").localeCompare(b.from_time || ""))
     .map(t => {
@@ -703,8 +733,8 @@ function downloadSubXlsx(list, sections) {
     });
   const head = ["Section", "Train No.", "Shift", "From", "To", "Origin", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)", "Current stn", "Act. time", "Late (min)"];
   const widths = [11, 10, 9.7, 18, 15.4, 11, 19.1, 19, 20.3, 10, 13.6, 14.6];
-  const asof = SUB.as_of || "";
-  const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${SUB_Q ? " - search: " + SUB_Q : ""}`;
+  asof = asof || "";
+  const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${note ? " - " + note : ""}`;
   const blob = xlsxBlob(title, head, rows, widths);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -725,7 +755,7 @@ async function loadSub() {
 // ---------- controls ----------
 document.getElementById("btn-prev").addEventListener("click", () => { VIEW = "prev"; history.replaceState(null, "", "#"); render(); });
 document.getElementById("btn-today").addEventListener("click", () => { VIEW = "today"; history.replaceState(null, "", "#"); render(); });
-document.getElementById("btn-sub").addEventListener("click", () => { VIEW = "sub"; history.replaceState(null, "", "#suburban"); render(); loadSub(); });
+document.getElementById("btn-sub").addEventListener("click", () => { VIEW = "sub"; history.replaceState(null, "", "#suburban"); render(); loadSub(); loadSubDates(); });
 document.getElementById("refresh").addEventListener("click", () => { load(); loadSub(); });
 const skinSel = document.getElementById("skin");
 function setSkin(v) { document.documentElement.setAttribute("data-skin", v); skinSel.value = v; try { localStorage.setItem("pam-skin", v); } catch (e) {} }
@@ -737,6 +767,7 @@ if (location.hash === "#suburban") VIEW = "sub";
 render();
 load();
 loadSub();
+loadSubDates();
 setInterval(load, REFRESH_MS);
 setInterval(loadSub, REFRESH_MS);
 </script>
