@@ -178,7 +178,20 @@
   .late { font-weight: 700; }
   .late.ok { color: var(--up); } .late.mid { color: #b06a00; } .late.bad { color: var(--down); }
   [data-skin="dark"] .late.mid { color: #f0b44c; }
-  td.pos { text-align: left; white-space: normal; min-width: 170px; }
+  /* suburban tables: always fit the screen - no sideways scrolling */
+  table.sub { table-layout: fixed; width: 100%; }
+  table.sub th, table.sub td { white-space: normal; overflow-wrap: anywhere; padding: 8px 8px; vertical-align: top; }
+  table.sub th { font-size: 10.5px; }
+  table.sub col.c-tr { width: 10%; } table.sub col.c-rt { width: 16%; } table.sub col.c-or { width: 25%; }
+  table.sub col.c-cp { width: 27%; } table.sub col.c-lt { width: 9%; } table.sub col.c-st { width: 13%; }
+  @media (max-width: 760px) {
+    table.sub, table.sub tbody, table.sub tr, table.sub td { display: block; width: 100%; }
+    table.sub colgroup, table.sub thead { display: none; }
+    table.sub tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+    table.sub td { border: 0; padding: 3px 12px; text-align: left !important; display: grid; grid-template-columns: 112px 1fr; gap: 8px; }
+    table.sub td::before { content: attr(data-l); color: var(--muted); font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .03em; }
+  }
+  td.pos { text-align: left; white-space: normal; }
   td.pos .nm { color: var(--muted); font-size: 11.5px; }
   td.route { text-align: left; color: var(--ink-2); font-size: 12px; }
   tr.hit td { background: color-mix(in srgb, var(--accent) 14%, transparent) !important; }
@@ -581,6 +594,7 @@ function posCell(r) {
 function origCell(r) {
   if (!r.origin) return '<span class="dash">—</span>';
   const head = `<b>${esc(r.origin)}</b> <span class="nm">${esc(r.orig_name || "")}</span>`;
+  if (r.orig_sch === undefined) return `${head}<br><span class="nm">departure details not in feed yet</span>`;
   if (!r.orig_act) return `${head}<br><span class="nm">Sch. dep ${tOnly(r.orig_sch)} &middot; not departed</span>`;
   const v = r.orig_late === null || r.orig_late === undefined ? null : Number(r.orig_late);
   const lt = v === null || isNaN(v) ? "" : v === 0 ? ' <span class="late ok">RT</span>' : v < 0 ? ` <span class="late ok">${v}</span>` : ` <span class="late ${v > 15 ? "bad" : "mid"}">+${v}</span>`;
@@ -614,11 +628,13 @@ function renderSub() {
       .sort((a, b) => (a.shift || "").localeCompare(b.shift || "") * -1 || (a.from_time || "").localeCompare(b.from_time || ""));
     if (!list.length) return;
     shown += list.length;
-    cards += `<div class="card"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div class="tbl"><table>
+    cards += `<div class="card"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
+      <colgroup><col class="c-tr"><col class="c-rt"><col class="c-or"><col class="c-cp"><col class="c-lt"><col class="c-st"></colgroup>
       <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th></tr></thead><tbody>
-      ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></td>
-        <td class="route">${esc(t.from_stn)} ${esc(t.from_time || "")} &rarr; ${esc(t.to_stn)} ${esc(t.to_time || "")}</td>
-        <td class="pos">${origCell(t)}</td><td class="pos">${posCell(t)}</td><td>${lateCell(t)}</td><td>${statusTag(t.status)}</td></tr>`).join("")}
+      ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td data-l="Train"><span><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></span></td>
+        <td class="route" data-l="Route (DLI list)"><span>${esc(t.from_stn)} ${esc(t.from_time || "")} &rarr; ${esc(t.to_stn)} ${esc(t.to_time || "")}</span></td>
+        <td class="pos" data-l="Started from"><span>${origCell(t)}</span></td><td class="pos" data-l="Current position"><span>${posCell(t)}</span></td>
+        <td data-l="Late (min)"><span>${lateCell(t)}</span></td><td data-l="Status"><span>${statusTag(t.status)}</span></td></tr>`).join("")}
       </tbody></table></div></div>`;
   });
   html += shown ? `<div class="secs">${cards}</div>` : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
