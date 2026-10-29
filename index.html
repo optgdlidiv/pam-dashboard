@@ -187,6 +187,10 @@
   table.sub th { font-size: 10.5px; }
   table.sub col.c-tr { width: 9%; } table.sub col.c-rt { width: 14%; } table.sub col.c-or { width: 22%; }
   table.sub col.c-cp { width: 24%; } table.sub col.c-lt { width: 8%; } table.sub col.c-st { width: 11%; } table.sub col.c-rm { width: 12%; }
+  .blk + .blk { margin-top: 22px; padding-top: 18px; border-top: 2px dashed var(--border); }
+  .card.g1 { border: 2px solid #e0a100; box-shadow: 0 0 0 3px rgba(237,161,0,.18), var(--shadow); }
+  .card.g1 h3 { background: #fff4d6; color: #6e4b00; }
+  [data-skin="dark"] .card.g1 h3 { background: #3a2f14; color: #f0c879; }
   .rmk { font: inherit; font-size: 11.5px; font-weight: 650; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 6px; padding: 2px 8px; cursor: pointer; white-space: nowrap; }
   .rmk:hover { background: var(--accent); color: var(--accent-ink); }
   #rmkbox { position: fixed; inset: 0; background: rgba(10,20,35,.45); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
@@ -612,6 +616,13 @@ function posCell(r) {
   const ev = r.event === "Dep" ? "Dep" : "Arr";
   return `<b>${esc(r.stn_code)}</b> <span class="nm">${esc(r.stn_name || "")}</span><br>${ev} ${tOnly(r.act)} <span class="nm">(Sch ${tOnly(r.sch)})</span>`;
 }
+// ---------- display order (Dom, 29-Oct): group 1 on top + highlighted, then group 2, then the rest ----------
+const GROUP1 = new Set(["64439", "64103", "74022", "64034", "64462", "54424", "54414", "64077",
+  "64492", "64110", "64582", "64021", "64461", "64471", "54423", "54417"]);
+const GROUP2 = new Set(["64105", "64082", "64102", "54473", "54474", "64027", "64470", "64912"]);
+const grp = t => (GROUP1.has(String(t.train)) ? 1 : GROUP2.has(String(t.train)) ? 2 : 3);
+const byShiftTime = (a, b) => (b.shift || "").localeCompare(a.shift || "") || (a.from_time || "").localeCompare(b.from_time || "");
+
 // ---------- remarks (detentions from ICMS TS/1002C) ----------
 const DET_HEADS = { ENG: "Engineering", ENGG: "Engineering", DELC: "Direct Electric", IELC: "Indirect Electric", DCW: "Direct C&W",
   ICW: "Indirect C&W", ST: "Signal & Telecom", PBOL: "Planned Block Open Line", CNST: "Construction", ACP: "Alarm Chain Pulling",
@@ -672,13 +683,14 @@ function renderSub() {
     if (age > 45) html += `<div class="banner">This position is ${Math.round(age)} minutes old &mdash; the 30-minute update has not run since ${esc(SUB.as_of.slice(11, 16))} hrs.</div>`;
   }
   const sections = [...new Set(trains.map(t => t.section))];
-  let shown = 0, cards = "";
+  let shown = 0, blocks = "";
+  [1, 2, 3].forEach(g => {
+  let cards = "";
   sections.forEach(sec => {
-    const list = trains.filter(t => t.section === sec && (!q || String(t.train).includes(q)))
-      .sort((a, b) => (a.shift || "").localeCompare(b.shift || "") * -1 || (a.from_time || "").localeCompare(b.from_time || ""));
+    const list = trains.filter(t => grp(t) === g && t.section === sec && (!q || String(t.train).includes(q))).sort(byShiftTime);
     if (!list.length) return;
     shown += list.length;
-    cards += `<div class="card"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
+    cards += `<div class="card${g === 1 ? " g1" : ""}"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
       <colgroup><col class="c-tr"><col class="c-rt"><col class="c-or"><col class="c-cp"><col class="c-lt"><col class="c-st"><col class="c-rm"></colgroup>
       <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
       ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td data-l="Train"><span><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></span></td>
@@ -688,7 +700,9 @@ function renderSub() {
         <td data-l="Remarks"><span>${dets(t).length ? `<button type="button" class="rmk" data-train="${esc(t.train)}">Remarks (${dets(t).length})</button>` : ""}</span></td></tr>`).join("")}
       </tbody></table></div></div>`;
   });
-  html += shown ? `<div class="secs">${cards}</div>` : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
+  if (cards) blocks += `<div class="secs blk blk${g}">${cards}</div>`;
+  });
+  html += shown ? blocks : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
   html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
   view.innerHTML = html;
   const box = document.getElementById("subq");
@@ -715,17 +729,18 @@ function zip(files) {   // files: [{name, data: Uint8Array}] - stored (no compre
   const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cenLen), ...u32(off), ...u16(0)]);
   return new Blob([...parts, ...cen, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
 }
-function xlsxBlob(title, head, rows, widths) {
+function xlsxBlob(title, head, rows, widths, rowStyles) {
   const x = v => String(v ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
   const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
   const cell = (v, r, c, st) => (typeof v === "number" && isFinite(v))
     ? `<c r="${col(c)}${r}"${st ? ` s="${st}"` : ""}><v>${v}</v></c>`
     : `<c r="${col(c)}${r}" t="inlineStr"${st ? ` s="${st}"` : ""}><is><t xml:space="preserve">${x(v)}</t></is></c>`;
   const all = [[title], [], head, ...rows];
-  const sd = all.map((row, i) => `<row r="${i + 1}">${row.map((v, j) => cell(v, i + 1, j, i === 0 ? 1 : i === 2 ? 2 : 0)).join("")}</row>`).join("");
+  const st = i => (i === 0 ? 1 : i === 2 ? 2 : i > 2 && rowStyles ? rowStyles[i - 3] || 0 : 0);
+  const sd = all.map((row, i) => `<row r="${i + 1}">${row.map((v, j) => cell(v, i + 1, j, st(i))).join("")}</row>`).join("");
   const cols = `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`;
   const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData><autoFilter ref="A3:${col(head.length - 1)}${all.length}"/></worksheet>`;
-  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF164277"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF164277"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const E = s => new TextEncoder().encode(s);
   return zip([
     { name: "[Content_Types].xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`) },
@@ -760,20 +775,26 @@ async function loadSubDates() {
 }
 function downloadSubXlsx(list, sections, asof, note) {
   const order = new Map(sections.map((s, i) => [s, i]));
-  const rows = list.slice().sort((a, b) => order.get(a.section) - order.get(b.section) || (b.shift || "").localeCompare(a.shift || "") || (a.from_time || "").localeCompare(b.from_time || ""))
-    .map(t => {
-      const live = t.status === "Running" || t.status === "Arrived";
-      const hm = v => (tOnly(v) === "—" ? "" : tOnly(v));
-      return [t.section, t.train, t.shift, `${t.from_stn || ""} ${t.from_time || ""}`.trim(), `${t.to_stn || ""} ${t.to_time || ""}`.trim(),
+  const sorted = list.slice().sort((a, b) => grp(a) - grp(b) || order.get(a.section) - order.get(b.section) || byShiftTime(a, b));
+  const styles = [];
+  const rows = [];
+  sorted.forEach((t, i) => {
+    if (i && grp(t) !== grp(sorted[i - 1])) { rows.push([]); styles.push(0); }   // gap between groups
+    rows.push(rowOf(t)); styles.push(grp(t) === 1 ? 3 : 0);
+  });
+  function rowOf(t) {
+    const live = t.status === "Running" || t.status === "Arrived";
+    const hm = v => (tOnly(v) === "—" ? "" : tOnly(v));
+    return [t.section, t.train, t.shift, `${t.from_stn || ""} ${t.from_time || ""}`.trim(), `${t.to_stn || ""} ${t.to_time || ""}`.trim(),
         t.origin || "", hm(t.orig_sch), t.orig_act ? hm(t.orig_act) : "", t.orig_act ? rtLabel(t.orig_late, false) : "",
         live ? (t.stn_code || "") : "", live ? hm(t.act) : "", live ? rtLabel(t.late, t.status === "Arrived") : "",
         dets(t).map(detText).join(" | ")];
-    });
+  }
   const head = ["Section", "Train No.", "Shift", "From", "To", "Origin", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)", "Current stn", "Act. time", "Late (min)", "Remarks"];
   const widths = [11, 10, 9.7, 18, 15.4, 11, 19.1, 19, 20.3, 10, 13.6, 14.6, 90];
   asof = asof || "";
   const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${note ? " - " + note : ""}`;
-  const blob = xlsxBlob(title, head, rows, widths);
+  const blob = xlsxBlob(title, head, rows, widths, styles);
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `LIVE_Suburban_${asof ? asof.replace(/[-: ]/g, "").replace(/^(\d{8})(\d{4})$/, "$1_$2") : "now"}.xlsx`;
