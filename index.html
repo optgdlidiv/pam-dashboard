@@ -674,10 +674,10 @@ function renderSub() {
   let html = `<div class="subbar">
     <label class="search" title="Search by train number"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input id="subq" inputmode="numeric" placeholder="Search train no." value="${esc(SUB_Q)}" aria-label="Search by train number"></label>
-    <button type="button" class="xls" id="subxls" title="Download the trains shown below as an Excel file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download Excel</button>
+    ${SUB_ONLY ? "" : `<button type="button" class="xls" id="subxls" title="Download the trains shown below as an Excel file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download Excel</button>
     <span class="saved" title="Final position of each day, saved at 23:45">Saved day
       <select id="subday" aria-label="Saved day">${SUB_DATES === null ? '<option value="">loading…</option>' : SUB_DATES.length ? SUB_DATES.map(d => `<option value="${d}"${d === SUB_DAY ? " selected" : ""}>${dLong(d)}</option>`).join("") : '<option value="">none yet</option>'}</select>
-      <button type="button" class="xls alt" id="subdayxls"${SUB_DATES && SUB_DATES.length ? "" : " disabled"}>Excel</button></span>
+      <button type="button" class="xls alt" id="subdayxls"${SUB_DATES && SUB_DATES.length ? "" : " disabled"}>Excel</button></span>`}
     <div class="chips"><span class="chip">Running <b>${cnt("Running")}</b></span><span class="chip">Arrived <b>${cnt("Arrived")}</b></span>
       <span class="chip">Yet to start <b>${cnt("Yet to start")}</b></span><span class="chip">No data <b>${trains.filter(t => !["Running", "Arrived", "Yet to start"].includes(t.status)).length}</b></span></div></div>`;
   if (SUB.as_of) {
@@ -709,10 +709,10 @@ function renderSub() {
   html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
   view.innerHTML = html;
   const box = document.getElementById("subq");
-  document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections, SUB.as_of, SUB_Q ? "search: " + SUB_Q : ""));
-  document.getElementById("subday").addEventListener("change", e => { SUB_DAY = e.target.value; });
+  if (!SUB_ONLY) document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections, SUB.as_of, SUB_Q ? "search: " + SUB_Q : ""));
+  if (!SUB_ONLY) document.getElementById("subday").addEventListener("change", e => { SUB_DAY = e.target.value; });
   view.querySelectorAll(".rmk").forEach(b => b.addEventListener("click", () => showRemarks(trains.find(t => String(t.train) === b.dataset.train))));
-  document.getElementById("subdayxls").addEventListener("click", downloadSavedDay);
+  if (!SUB_ONLY) document.getElementById("subdayxls").addEventListener("click", downloadSavedDay);
   box.addEventListener("input", e => { SUB_Q = e.target.value; const pos = e.target.selectionStart; renderSub(); const b = document.getElementById("subq"); b.focus(); b.setSelectionRange(pos, pos); });
 }
 // ---------- one-click Excel (.xlsx) download - built in the browser, no add-ons ----------
@@ -835,7 +835,7 @@ if (SUB_ONLY) {
 render();
 if (!SUB_ONLY) { load(); setInterval(load, REFRESH_MS); }
 loadSub();
-loadSubDates();
+if (!SUB_ONLY) loadSubDates();
 setInterval(loadSub, REFRESH_MS);
 </script>
 </body>
