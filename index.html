@@ -256,6 +256,8 @@
 <div id="tip"></div>
 
 <script>
+// Separate link (suburban-live/): only the suburban view, no PAM views. Set by build_pages.py.
+const SUB_ONLY = document.documentElement.dataset.subOnly === "1";
 const FEED_URL = "https://script.google.com/macros/s/AKfycbw9fZSeDdnB8CpgEtqdr__KFKatIrLTBgmyicNTeV61SBYrYp7UeNW2MSsXlS0S73mj/exec";
 const REFRESH_MS = 5 * 60 * 1000;
 
@@ -684,13 +686,14 @@ function renderSub() {
   }
   const sections = [...new Set(trains.map(t => t.section))];
   let shown = 0, blocks = "";
+  const multi = new Set(trains.map(grp)).size > 1;   // highlight / separators only when groups are mixed
   [1, 2, 3].forEach(g => {
   let cards = "";
   sections.forEach(sec => {
     const list = trains.filter(t => grp(t) === g && t.section === sec && (!q || String(t.train).includes(q))).sort(byShiftTime);
     if (!list.length) return;
     shown += list.length;
-    cards += `<div class="card${g === 1 ? " g1" : ""}"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
+    cards += `<div class="card${g === 1 && multi ? " g1" : ""}"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
       <colgroup><col class="c-tr"><col class="c-rt"><col class="c-or"><col class="c-cp"><col class="c-lt"><col class="c-st"><col class="c-rm"></colgroup>
       <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
       ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td data-l="Train"><span><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></span></td>
@@ -700,7 +703,7 @@ function renderSub() {
         <td data-l="Remarks"><span>${dets(t).length ? `<button type="button" class="rmk" data-train="${esc(t.train)}">Remarks (${dets(t).length})</button>` : ""}</span></td></tr>`).join("")}
       </tbody></table></div></div>`;
   });
-  if (cards) blocks += `<div class="secs blk blk${g}">${cards}</div>`;
+  if (cards) blocks += `<div class="secs${multi ? " blk" : ""} blk${g}">${cards}</div>`;
   });
   html += shown ? blocks : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
   html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
@@ -822,12 +825,17 @@ let saved = "navy"; try { saved = localStorage.getItem("pam-skin") || "navy"; } 
 setSkin(saved);
 skinSel.addEventListener("change", e => setSkin(e.target.value));
 
-if (location.hash === "#suburban") VIEW = "sub";
+if (location.hash === "#suburban" || SUB_ONLY) VIEW = "sub";
+if (SUB_ONLY) {
+  document.querySelector(".seg").hidden = true;
+  document.getElementById("stamp").hidden = true;
+  document.getElementById("refresh").onclick = null;
+  document.getElementById("refresh").addEventListener("click", () => { loadSub(); loadSubDates(); });
+}
 render();
-load();
+if (!SUB_ONLY) { load(); setInterval(load, REFRESH_MS); }
 loadSub();
 loadSubDates();
-setInterval(load, REFRESH_MS);
 setInterval(loadSub, REFRESH_MS);
 </script>
 </body>

@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en" data-sub-only="1">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>LIVE Suburban Trains Tracking - DLI</title>
+<style>
+  /* ---------- Themes ---------- */
+  :root, [data-skin="navy"] {
+    color-scheme: light;
+    --page: linear-gradient(160deg, #e8eef6 0%, #dde6f1 55%, #e9eef5 100%);
+    --header: linear-gradient(100deg, #0d2747 0%, #164277 100%);
+    --header-ink: #ffffff; --header-sub: #b9cbe3;
+    --accent: #1f6fd1; --accent-ink: #ffffff;
+    --card: #ffffff; --card-head: #f5f8fc;
+    --ink: #0e1726; --ink-2: #44526a; --muted: #75839a;
+    --border: #d6dfeb; --grid: #e9eef4;
+    --shadow: 0 1px 2px rgba(16,39,71,.06), 0 6px 18px rgba(16,39,71,.07);
+    --cy: #2a78d6; --ly: #d55181; --up: #0a8a3a; --down: #d13b3b;
+    --banner-bg: #fff3d6; --banner-ink: #6e4b00;
+  }
+  [data-skin="classic"] {
+    color-scheme: light;
+    --page: linear-gradient(160deg, #e7e8de 0%, #dcdfd0 100%);
+    --header: linear-gradient(100deg, #36452b 0%, #546b3f 100%);
+    --header-ink: #ffffff; --header-sub: #d6e0c6;
+    --accent: #4f7232; --accent-ink: #ffffff;
+    --card: #fbfbf7; --card-head: #f0f1e8;
+    --ink: #1d2416; --ink-2: #4a5440; --muted: #7a8370;
+    --border: #d3d6c4; --grid: #e7e9dd;
+    --shadow: 0 1px 2px rgba(40,50,30,.08), 0 6px 18px rgba(40,50,30,.08);
+    --cy: #2a78d6; --ly: #d55181; --up: #2f7d1d; --down: #c8332f;
+    --banner-bg: #fff3d6; --banner-ink: #6e4b00;
+  }
+  [data-skin="maroon"] {
+    color-scheme: light;
+    --page: linear-gradient(160deg, #f6eff0 0%, #ede1e3 100%);
+    --header: linear-gradient(100deg, #5a1520 0%, #8e2433 100%);
+    --header-ink: #ffffff; --header-sub: #f0c9cf;
+    --accent: #8e2433; --accent-ink: #ffffff;
+    --card: #ffffff; --card-head: #fbf5f6;
+    --ink: #24131a; --ink-2: #5a4249; --muted: #8a737a;
+    --border: #e6d4d8; --grid: #f2e8ea;
+    --shadow: 0 1px 2px rgba(90,21,32,.06), 0 6px 18px rgba(90,21,32,.08);
+    --cy: #2a78d6; --ly: #d55181; --up: #0a8a3a; --down: #d13b3b;
+    --banner-bg: #fff3d6; --banner-ink: #6e4b00;
+  }
+  [data-skin="dark"] {
+    color-scheme: dark;
+    --page: radial-gradient(1200px 600px at 10% -10%, #1b2638 0%, #0d1117 60%);
+    --header: linear-gradient(100deg, #111a29 0%, #1a2a44 100%);
+    --header-ink: #f0f4fa; --header-sub: #8fa3c0;
+    --accent: #3987e5; --accent-ink: #ffffff;
+    --card: #161b22; --card-head: #1b222c;
+    --ink: #e6edf3; --ink-2: #b4bfcc; --muted: #8b949e;
+    --border: #2b333e; --grid: #222a34;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --cy: #3987e5; --ly: #d55181; --up: #3fbf6a; --down: #ef6b6b;
+    --banner-bg: #3a2f14; --banner-ink: #f0c879;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--page) fixed; min-height: 100%; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh; background: transparent;
+    color: var(--ink); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  }
+  /* ---------- Header ---------- */
+  .top { background: var(--header); color: var(--header-ink); box-shadow: 0 2px 10px rgba(0,0,0,.18); }
+  .top .in { max-width: 1240px; margin: 0 auto; padding: 14px 16px; display: flex; gap: 12px 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .badge { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.14); display: grid; place-items: center; flex: none; }
+  .brand h1 { font-size: 19px; margin: 0; font-weight: 650; letter-spacing: .01em; }
+  .brand .sub { color: var(--header-sub); font-size: 12.5px; }
+  .ctrls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .ctrls label { font-size: 12px; color: var(--header-sub); }
+  .ctrls select, .ctrls button {
+    font: inherit; font-size: 12.5px; color: var(--header-ink); background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.25); border-radius: 7px; padding: 6px 10px; cursor: pointer;
+  }
+  .ctrls select option { color: #111; }
+  .stamp { font-size: 11.5px; color: var(--header-sub); text-align: right; line-height: 1.35; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 18px 16px 40px; }
+
+  /* ---------- View switch ---------- */
+  .bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; box-shadow: var(--shadow); }
+  .seg button {
+    font: inherit; font-weight: 600; font-size: 13.5px; border: 0; background: transparent; color: var(--ink-2);
+    padding: 8px 18px; border-radius: 7px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center;
+  }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .seg .live { width: 8px; height: 8px; border-radius: 50%; background: #e34948; box-shadow: 0 0 0 0 rgba(227,73,72,.6); animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(227,73,72,.55); } 70% { box-shadow: 0 0 0 7px rgba(227,73,72,0); } 100% { box-shadow: 0 0 0 0 rgba(227,73,72,0); } }
+  .viewdate { font-size: 13px; color: var(--ink-2); }
+  .viewdate b { color: var(--ink); }
+
+  .banner { background: var(--banner-bg); color: var(--banner-ink); border-radius: 9px; padding: 9px 14px; font-size: 12.5px; margin-bottom: 14px; }
+
+  /* ---------- KPI cards ---------- */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  @media (max-width: 520px) { .kpi .v { font-size: 24px; } .kpi:last-child { grid-column: 1 / -1; } }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--accent); }
+  .kpi .k { font-size: 12px; color: var(--ink-2); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  .kpi .v { font-size: 30px; font-weight: 700; letter-spacing: -.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .kpi .v small { font-size: 15px; color: var(--muted); font-weight: 600; }
+  .kpi .s { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .dl { font-weight: 650; white-space: nowrap; }
+  .dl.up { color: var(--up); } .dl.down { color: var(--down); }
+
+  /* ---------- Cards ---------- */
+  .grid { display: grid; gap: 14px; margin-bottom: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 960px) { .grid.two { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+  .card h3 { margin: 0; padding: 11px 16px; font-size: 14px; font-weight: 650; background: var(--card-head); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+  .card h3 span { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .card .body { padding: 14px 16px; }
+  .chart svg { display: block; width: 100%; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--ink-2); justify-content: center; margin-top: 8px; }
+  .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  /* donut + legend */
+  .pie { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: center; }
+  @media (min-width: 560px) { .pie { grid-template-columns: 260px 1fr; } }
+  .pie > .chart { width: 100%; max-width: 240px; margin: 0 auto; }
+  .pie-legend { display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 13px; }
+  .pie-legend .row { display: grid; grid-template-columns: 14px 1fr auto auto; gap: 10px; align-items: center; padding: 5px 8px; border-radius: 7px; }
+  .pie-legend .row:hover { background: var(--grid); }
+  .pie-legend i { width: 12px; height: 12px; border-radius: 3px; }
+  .pie-legend .n { font-variant-numeric: tabular-nums; color: var(--ink-2); min-width: 34px; text-align: right; }
+  .pie-legend .p { font-variant-numeric: tabular-nums; font-weight: 650; min-width: 58px; text-align: right; }
+
+  /* mini donuts */
+  .minis { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+  .mini { border: 1px solid var(--border); border-radius: 10px; padding: 8px 6px 10px; text-align: center; }
+  .mini .t { font-weight: 650; font-size: 13px; }
+  .mini .f { font-size: 11px; color: var(--muted); }
+  .mini .x { font-size: 11px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  /* table */
+  .tbl { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.8px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 8px 10px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--grid); }
+  thead th { background: var(--card-head); color: var(--ink-2); font-weight: 650; font-size: 11.5px; text-transform: uppercase; letter-spacing: .03em; position: sticky; top: 0; }
+  thead tr.grp th { text-align: center; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  tbody tr:hover td { background: var(--grid); }
+  tr.total td { font-weight: 700; border-top: 2px solid var(--border); background: var(--card-head); }
+  td .full { color: var(--muted); font-size: 11px; margin-left: 6px; }
+  .dash { color: var(--muted); }
+
+  .empty { color: var(--muted); text-align: center; padding: 26px 8px; }
+  .err { color: #ffd2d2; }
+  #tip { position: fixed; pointer-events: none; z-index: 50; background: #111827; color: #fff; font-size: 12px; padding: 7px 10px; border-radius: 7px; opacity: 0; transition: opacity .08s; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.25); font-variant-numeric: tabular-nums; }
+  footer { text-align: center; color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+  [hidden] { display: none !important; }
+
+  /* ---------- Suburban live tracking ---------- */
+  .subbar { display: flex; gap: 10px 16px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+  .subbar h2 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 6px 10px; box-shadow: var(--shadow); }
+  .search input { font: inherit; border: 0; outline: 0; background: transparent; color: var(--ink); width: 170px; font-variant-numeric: tabular-nums; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  .xls { font: inherit; font-size: 13px; font-weight: 600; color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 9px; padding: 8px 14px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; box-shadow: var(--shadow); }
+  .xls:hover { filter: brightness(1.08); }
+  .xls.alt { background: var(--card); color: var(--ink); border: 1px solid var(--border); }
+  .saved { display: inline-flex; gap: 8px; align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 4px 6px 4px 10px; box-shadow: var(--shadow); font-size: 12.5px; color: var(--ink-2); }
+  .saved select { font: inherit; color: var(--ink); background: transparent; border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12.5px; color: var(--ink-2); }
+  .chip b { color: var(--ink); }
+  .secs { display: grid; gap: 14px; grid-template-columns: 1fr; margin-bottom: 14px; }
+  @media (min-width: 1700px) { .secs { grid-template-columns: 1fr 1fr; } }
+  .st { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 5px; letter-spacing: .02em; }
+  .st.run { background: #e3efff; color: #1553a6; } .st.arr { background: #e2f5e8; color: #0a6b2e; }
+  .st.yts { background: var(--grid); color: var(--ink-2); } .st.nd { background: #fde6e6; color: #a02424; }
+  [data-skin="dark"] .st.run { background: #16304f; color: #9cc6ff; } [data-skin="dark"] .st.arr { background: #12301d; color: #8fe0a8; } [data-skin="dark"] .st.nd { background: #3a1717; color: #f3a3a3; }
+  .late { font-weight: 700; }
+  .late.ok { color: var(--up); } .late.mid { color: #b06a00; } .late.bad { color: var(--down); }
+  [data-skin="dark"] .late.mid { color: #f0b44c; }
+  /* suburban tables: always fit the screen - no sideways scrolling */
+  table.sub { table-layout: fixed; width: 100%; }
+  table.sub th, table.sub td { white-space: normal; overflow-wrap: anywhere; padding: 8px 8px; vertical-align: top; }
+  table.sub th { font-size: 10.5px; }
+  table.sub col.c-tr { width: 9%; } table.sub col.c-rt { width: 14%; } table.sub col.c-or { width: 22%; }
+  table.sub col.c-cp { width: 24%; } table.sub col.c-lt { width: 8%; } table.sub col.c-st { width: 11%; } table.sub col.c-rm { width: 12%; }
+  .blk + .blk { margin-top: 22px; padding-top: 18px; border-top: 2px dashed var(--border); }
+  .card.g1 { border: 2px solid #e0a100; box-shadow: 0 0 0 3px rgba(237,161,0,.18), var(--shadow); }
+  .card.g1 h3 { background: #fff4d6; color: #6e4b00; }
+  [data-skin="dark"] .card.g1 h3 { background: #3a2f14; color: #f0c879; }
+  .rmk { font: inherit; font-size: 11.5px; font-weight: 650; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 6px; padding: 2px 8px; cursor: pointer; white-space: nowrap; }
+  .rmk:hover { background: var(--accent); color: var(--accent-ink); }
+  #rmkbox { position: fixed; inset: 0; background: rgba(10,20,35,.45); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+  #rmkbox.on { display: flex; }
+  #rmkbox .in { background: var(--card); color: var(--ink); border-radius: 12px; max-width: 900px; width: 100%; max-height: 85vh; overflow: auto; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+  #rmkbox h4 { margin: 0; padding: 12px 16px; background: var(--card-head); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+  #rmkbox h4 button { font: inherit; border: 0; background: transparent; color: var(--ink-2); font-size: 20px; cursor: pointer; line-height: 1; }
+  #rmkbox table td, #rmkbox table th { white-space: normal; text-align: left; vertical-align: top; }
+  #rmkbox tr.dli td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  @media (max-width: 760px) {
+    table.sub, table.sub tbody, table.sub tr, table.sub td { display: block; width: 100%; }
+    table.sub colgroup, table.sub thead { display: none; }
+    table.sub tr { border-bottom: 1px solid var(--border); padding: 6px 0; }
+    table.sub td { border: 0; padding: 3px 12px; text-align: left !important; display: grid; grid-template-columns: 112px 1fr; gap: 8px; }
+    table.sub td::before { content: attr(data-l); color: var(--muted); font-size: 11px; font-weight: 650; text-transform: uppercase; letter-spacing: .03em; }
+  }
+  td.pos { text-align: left; white-space: normal; }
+  td.pos .nm { color: var(--muted); font-size: 11.5px; }
+  td.route { text-align: left; color: var(--ink-2); font-size: 12px; }
+  tr.hit td { background: color-mix(in srgb, var(--accent) 14%, transparent) !important; }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="in">
+    <div class="brand">
+      <div class="badge" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="13" rx="3"/><path d="M5 10h14"/><circle cx="9" cy="13" r=".8" fill="currentColor"/><circle cx="15" cy="13" r=".8" fill="currentColor"/><path d="M8 16l-2 4M16 16l2 4M7 19h10"/></svg>
+      </div>
+      <div>
+        <h1>Punctuality Performance &mdash; Mail Express [BG]</h1>
+        <div class="sub">Delhi Division &middot; Mail-Express Group (M) &middot; Source: ICMS PAM</div>
+      </div>
+    </div>
+    <div class="ctrls">
+      <label for="skin">Theme</label>
+      <select id="skin" aria-label="Theme">
+        <option value="navy">Railway Blue</option>
+        <option value="classic">Classic Olive</option>
+        <option value="maroon">Maroon</option>
+        <option value="dark">Night</option>
+      </select>
+      <button id="refresh" type="button">&#x21bb; Refresh</button>
+      <div class="stamp" id="stamp">Loading&hellip;</div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="bar">
+    <div class="seg" role="group" aria-label="Choose view">
+      <button type="button" id="btn-prev" aria-pressed="true">Previous Day</button>
+      <button type="button" id="btn-today" aria-pressed="false"><span class="live"></span>Today (Live)</button>
+      <button type="button" id="btn-sub" aria-pressed="false"><span class="live"></span>Suburban Trains (Live)</button>
+    </div>
+    <div class="viewdate" id="viewdate">&nbsp;</div>
+  </div>
+
+  <div id="view"><div class="empty">Loading&hellip;</div></div>
+
+  <footer>PP% = (Total RT/NLT &divide; Reported) &times; 100 &middot; Diff = this year &minus; last year (percentage points) &middot; Composition % is of Act. Sch. &middot; Auto-refresh every 5 min</footer>
+</div>
+<div id="tip"></div>
+
+<script>
+// Separate link (suburban-live/): only the suburban view, no PAM views. Set by build_pages.py.
+const SUB_ONLY = document.documentElement.dataset.subOnly === "1";
+const FEED_URL = "https://script.google.com/macros/s/AKfycbw9fZSeDdnB8CpgEtqdr__KFKatIrLTBgmyicNTeV61SBYrYp7UeNW2MSsXlS0S73mj/exec";
+const REFRESH_MS = 5 * 60 * 1000;
+
+const TYPE_NAMES = { AMTB: "Amrit Bharat", DRNT: "Duronto", GBR: "Garib Rath", JSH: "Jan Shatabdi", MEX: "Mail/Express",
+  RAJ: "Rajdhani", SHT: "Shatabdi", SUF: "Superfast", TEJ: "Tejas", VNDB: "Vande Bharat" };
+
+// Composition slices - fixed order and colour, matching the ICMS chart convention
+const SLICES = [
+  { key: "lt",      label: "LT",           color: "#e34948" },
+  { key: "bt",      label: "BT",           color: "#22b14c" },
+  { key: "rt",      label: "RT",           color: "#0f7a1f" },
+  { key: "mkup",    label: "MKUP",         color: "#2a78d6" },
+  { key: "nlt",     label: "NLT",          color: "#9fd3d0" },
+  { key: "not_rpt", label: "Not Reported", color: "#f2a3b3" },
+];
+
+// ---------- helpers ----------
+const isNum = v => typeof v === "number" && isFinite(v);
+const num = v => (isNum(v) ? v : 0);
+const n0 = v => num(v).toLocaleString("en-IN");
+const p2 = v => (isNum(v) ? v.toFixed(2) : "—");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const dLong = iso => { if (!iso) return "—"; const [y, m, d] = iso.split("-"); return `${d}-${MON[+m - 1]}-${y}`; };
+const dShort = iso => { const [, m, d] = iso.split("-"); return `${+d}-${MON[+m - 1]}`; };
+const asOf = s => { const m = /_(\d{2})(\d{2})/.exec(s || ""); return m ? `${m[1]}:${m[2]}` : "—"; };
+const stampFmt = s => { if (!s) return "—"; const [d, t] = s.split("T"); return `${dLong(d)} ${t ? t.slice(0, 5) : ""}`; };
+
+// On-date PP% is meaningless with nothing reported (ICMS treats blank as 0)
+function onDate(r) {
+  const ok = num(r.rpt) > 0;
+  const cy = ok && isNum(r.pp_ondate_cy) ? r.pp_ondate_cy : null;
+  const ly = isNum(r.pp_ondate_ly) ? r.pp_ondate_ly : null;
+  return { cy, ly, diff: cy !== null && ly !== null ? cy - ly : null };
+}
+function cum(r, a, b) {
+  const cy = isNum(r[a]) ? r[a] : null, ly = isNum(r[b]) ? r[b] : null;
+  return { cy, ly, diff: cy !== null && ly !== null ? cy - ly : null };
+}
+function dl(d) {
+  if (d === null) return '<span class="dash">—</span>';
+  if (Math.abs(d) < 0.005) return '<span class="dl">0.00</span>';
+  return d > 0 ? `<span class="dl up">▲ +${d.toFixed(2)}</span>` : `<span class="dl down">▼ −${Math.abs(d).toFixed(2)}</span>`;
+}
+
+// ---------- tooltip ----------
+const tip = document.getElementById("tip");
+document.addEventListener("mousemove", e => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if (!t) { tip.style.opacity = 0; return; }
+  tip.innerHTML = t.getAttribute("data-tip");
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY - h - 12;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y < 8) y = e.clientY + 16;
+  tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1;
+});
+
+// ---------- donut ----------
+function arc(cx, cy, r0, r1, a0, a1) {
+  const large = a1 - a0 > Math.PI ? 1 : 0;
+  const p = (r, a) => `${(cx + r * Math.sin(a)).toFixed(2)},${(cy - r * Math.cos(a)).toFixed(2)}`;
+  return `M${p(r1, a0)}A${r1},${r1} 0 ${large} 1 ${p(r1, a1)}L${p(r0, a1)}A${r0},${r0} 0 ${large} 0 ${p(r0, a0)}Z`;
+}
+function donutSVG(row, size, centerTop, centerBottom, title) {
+  const base = num(row.act_sch);
+  const vals = SLICES.map(s => ({ ...s, v: num(row[s.key]) }));
+  const total = vals.reduce((a, b) => a + b.v, 0) || 1;
+  const c = size / 2, r1 = c - 4, r0 = r1 * 0.62, gap = vals.filter(v => v.v > 0).length > 1 ? 0.012 : 0;
+  let a = 0, paths = "";
+  vals.forEach(s => {
+    if (s.v <= 0) return;
+    const span = (s.v / total) * Math.PI * 2;
+    const pct = base ? (s.v / base) * 100 : 0;
+    const a0 = a + gap / 2, a1 = a + span - gap / 2;
+    const tipTxt = `<b>${esc(title)}</b><br>${s.label}: ${n0(s.v)} (${pct.toFixed(2)}%)`;
+    paths += span >= Math.PI * 2 - 0.001
+      ? `<circle cx="${c}" cy="${c}" r="${(r0 + r1) / 2}" fill="none" stroke="${s.color}" stroke-width="${r1 - r0}" data-tip="${esc(tipTxt)}"/>`
+      : `<path d="${arc(c, c, r0, r1, a0, a1)}" fill="${s.color}" data-tip="${esc(tipTxt)}"/>`;
+    a += span;
+  });
+  if (!paths) paths = `<circle cx="${c}" cy="${c}" r="${(r0 + r1) / 2}" fill="none" stroke="var(--grid)" stroke-width="${r1 - r0}"/>`;
+  const big = size >= 200;
+  return `<svg viewBox="0 0 ${size} ${size}" role="img" aria-label="${esc(title)} composition">${paths}
+    <text x="${c}" y="${c + (big ? 4 : 3)}" text-anchor="middle" font-size="${big ? 30 : 17}" font-weight="700" fill="var(--ink)">${centerTop}</text>
+    <text x="${c}" y="${c + (big ? 24 : 16)}" text-anchor="middle" font-size="${big ? 12 : 9.5}" fill="var(--muted)">${centerBottom}</text></svg>`;
+}
+function bigPie(row, title) {
+  const base = num(row.act_sch);
+  const od = onDate(row);
+  const legend = SLICES.map(s => {
+    const v = num(row[s.key]), pct = base ? (v / base) * 100 : 0;
+    return `<div class="row" data-tip="${esc(`${s.label}: ${n0(v)} of ${n0(base)} Act. Sch.`)}"><i style="background:${s.color}"></i><span>${s.label}</span><span class="n">${n0(v)}</span><span class="p">${pct.toFixed(2)}%</span></div>`;
+  }).join("");
+  return `<div class="pie"><div class="chart">${donutSVG(row, 260, p2(od.cy), "PP%", title)}</div>
+    <div class="pie-legend">${legend}<div class="row" style="border-top:1px solid var(--border);border-radius:0;margin-top:4px;padding-top:8px"><i></i><b>Act. Sch.</b><span class="n"><b>${n0(base)}</b></span><span class="p">100%</span></div></div></div>`;
+}
+function miniDonuts(rows) {
+  const types = rows.filter(r => r.row_type === "train_type" && num(r.act_sch) > 0);
+  if (!types.length) return '<div class="empty">No train-type data</div>';
+  return `<div class="minis">${types.map(r => {
+    const od = onDate(r);
+    return `<div class="mini"><div class="chart" style="max-width:104px;margin:0 auto">${donutSVG(r, 110, od.cy === null ? "—" : od.cy.toFixed(0) + "%", "PP", r.train_type)}</div>
+      <div class="t">${esc(r.train_type)}</div><div class="f">${esc(TYPE_NAMES[r.train_type] || "")}</div>
+      <div class="x">Rpt ${n0(r.rpt)}/${n0(r.act_sch)} &middot; LT ${n0(r.lt)}</div></div>`;
+  }).join("")}</div>`;
+}
+
+// ---------- grouped bar: Day / Month / FY, CY vs LY ----------
+function groupBars(tot, dateIso, isToday) {
+  const d = onDate(tot), m = cum(tot, "pp_month_cy", "pp_month_ly"), f = cum(tot, "pp_fy_cy", "pp_fy_ly");
+  const ds = dShort(dateIso);
+  const groups = [
+    { l1: ds, l2: isToday ? "(Day, so far)" : "(Day)", v: d },
+    { l1: `Upto ${ds}`, l2: "(Month)", v: m },
+    { l1: `Upto ${ds}`, l2: "(Financial Year)", v: f },
+  ];
+  const W = 520, H = 290, pl = 36, pr = 10, pt = 18, pb = 46;
+  const y = v => pt + (1 - v / 100) * (H - pt - pb);
+  const gw = (W - pl - pr) / groups.length, bw = Math.min(54, gw * 0.3);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="PP% this year versus last year for day, month and financial year">`;
+  for (let g = 0; g <= 100; g += 20) {
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--grid)"/>`;
+    s += `<text x="${pl - 6}" y="${y(g) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${g}</text>`;
+  }
+  groups.forEach((g, i) => {
+    const cx = pl + gw * i + gw / 2;
+    [["cy", "var(--cy)", -1, "Current year"], ["ly", "var(--ly)", 1, "Last year"]].forEach(([k, col, side, nm]) => {
+      const v = g.v[k];
+      const x = cx + (side < 0 ? -bw - 2 : 2);
+      if (v === null) {
+        s += `<text x="${x + bw / 2}" y="${y(0) - 6}" text-anchor="middle" font-size="11" fill="var(--muted)">—</text>`;
+        return;
+      }
+      const top = y(v), h = y(0) - top;
+      s += `<path d="M${x},${y(0)}V${top + 4}a4,4 0 0 1 4,-4h${bw - 8}a4,4 0 0 1 4,4V${y(0)}Z" fill="${col}"
+              data-tip="${esc(`<b>${g.l1} ${g.l2}</b><br>${nm}: ${v.toFixed(2)}`)}"/>`;
+      s += `<text x="${x + bw / 2}" y="${top - 6}" text-anchor="middle" font-size="12" font-weight="650" fill="var(--ink)">${v.toFixed(2)}</text>`;
+    });
+    s += `<text x="${cx}" y="${H - pb + 18}" text-anchor="middle" font-size="12" fill="var(--ink-2)">${esc(g.l1)}</text>`;
+    s += `<text x="${cx}" y="${H - pb + 33}" text-anchor="middle" font-size="11" fill="var(--muted)">${esc(g.l2)}</text>`;
+  });
+  s += `<line x1="${pl}" x2="${W - pr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--border)"/></svg>`;
+  return `<div class="chart">${s}</div><div class="legend"><span><i style="background:var(--cy)"></i>Current Year</span><span><i style="background:var(--ly)"></i>Last Year</span></div>`;
+}
+
+// ---------- PP% by train type (bar + LY tick) ----------
+function typeBars(rows) {
+  const data = rows.filter(r => r.row_type === "train_type").map(r => ({ t: r.train_type, ...onDate(r), rpt: r.rpt, sch: r.act_sch }));
+  const W = 520, rh = 26, pl = 56, pr = 46, pt = 6, pb = 24, H = pt + pb + rh * data.length;
+  const x = v => pl + (v / 100) * (W - pl - pr);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="On-date PP% by train type">`;
+  [0, 25, 50, 75, 100].forEach(g => {
+    s += `<line x1="${x(g)}" x2="${x(g)}" y1="${pt}" y2="${H - pb}" stroke="var(--grid)"/>`;
+    s += `<text x="${x(g)}" y="${H - 7}" text-anchor="middle" font-size="11" fill="var(--muted)">${g}</text>`;
+  });
+  data.forEach((d, i) => {
+    const y = pt + i * rh, bh = 14, by = y + (rh - bh) / 2;
+    const tt = esc(`<b>${d.t}</b> ${TYPE_NAMES[d.t] || ""}<br>This year: ${p2(d.cy)}<br>Last year: ${p2(d.ly)}<br>Reported: ${n0(d.rpt)} / ${n0(d.sch)}`);
+    s += `<rect x="0" y="${y}" width="${W}" height="${rh}" fill="transparent" data-tip="${tt}"/>`;
+    s += `<text x="${pl - 8}" y="${y + rh / 2 + 4}" text-anchor="end" font-size="12" fill="var(--ink-2)" data-tip="${tt}">${esc(d.t)}</text>`;
+    if (d.cy !== null) {
+      const w = Math.max(6, x(d.cy) - x(0));
+      s += `<path d="M${x(0)},${by}h${w - 4}a4,4 0 0 1 4,4v${bh - 8}a4,4 0 0 1 -4,4h${-(w - 4)}Z" fill="var(--cy)" data-tip="${tt}"/>`;
+      // keep the value label clear of the last-year tick
+      let lx = x(0) + w + 6;
+      if (d.ly !== null && x(d.ly) >= lx - 6 && x(d.ly) <= lx + 32) lx = x(d.ly) + 6;
+      s += `<text x="${lx}" y="${y + rh / 2 + 4}" font-size="11.5" font-weight="600" fill="var(--ink)">${d.cy.toFixed(1)}</text>`;
+    } else {
+      s += `<text x="${x(0) + 6}" y="${y + rh / 2 + 4}" font-size="11.5" fill="var(--muted)">not reported</text>`;
+    }
+    if (d.ly !== null) s += `<line x1="${x(d.ly)}" x2="${x(d.ly)}" y1="${y + 3}" y2="${y + rh - 3}" stroke="var(--ly)" stroke-width="3" stroke-linecap="round" data-tip="${tt}"/>`;
+  });
+  s += "</svg>";
+  return `<div class="chart">${s}</div><div class="legend"><span><i style="background:var(--cy)"></i>Current Year</span><span><i style="background:var(--ly);width:4px"></i>Last Year (same date)</span></div>`;
+}
+
+// ---------- LT break-up ----------
+function ltBars(tot) {
+  const b = [["1–15 min", tot.lt_1_15], ["16–30 min", tot.lt_16_30], ["31–45 min", tot.lt_31_45], ["46–60 min", tot.lt_46_60], ["Above 60 min", tot.lt_above_60]].map(([k, v]) => [k, num(v)]);
+  const max = Math.max(1, ...b.map(x => x[1])), lt = num(tot.lt) || 1;
+  const shades = ["#f6b3a8", "#f08a7a", "#e34948", "#bf2f30", "#8f1c1f"];
+  const W = 520, rh = 34, pl = 96, pr = 70, H = rh * b.length + 4;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="LT trains by minutes late">`;
+  b.forEach(([k, v], i) => {
+    const y = i * rh + 4, w = (v / max) * (W - pl - pr);
+    const tt = esc(`<b>${k}</b><br>${n0(v)} trains (${((v / lt) * 100).toFixed(1)}% of LT)`);
+    s += `<rect x="0" y="${y}" width="${W}" height="${rh}" fill="transparent" data-tip="${tt}"/>`;
+    s += `<text x="${pl - 8}" y="${y + 19}" text-anchor="end" font-size="12" fill="var(--ink-2)">${k}</text>`;
+    s += `<rect x="${pl}" y="${y + 7}" width="${W - pl - pr}" height="18" rx="4" fill="var(--grid)"/>`;
+    if (v > 0) s += `<rect x="${pl}" y="${y + 7}" width="${Math.max(6, w)}" height="18" rx="4" fill="${shades[i]}" data-tip="${tt}"/>`;
+    s += `<text x="${W - pr + 8}" y="${y + 20}" font-size="12" font-weight="650" fill="var(--ink)">${n0(v)}</text>`;
+  });
+  s += "</svg>";
+  return `<div class="chart">${s}</div><div class="legend">Total LT trains: <b style="margin-left:4px">${n0(tot.lt)}</b></div>`;
+}
+
+// ---------- trend ----------
+function trendChart(trend) {
+  const pts = (trend || []).filter(r => r.report_date);
+  if (pts.length < 2) return `<div class="empty">The trend builds up as daily runs accumulate &mdash; ${pts.length} day${pts.length === 1 ? "" : "s"} recorded so far.</div>`;
+  const W = 1180, H = 290, pl = 40, pr = 14, pt = 14, pb = 30;
+  const vals = pts.flatMap(p => [p.pp_ondate_cy, p.pp_ondate_ly]).filter(isNum);
+  let lo = Math.max(0, Math.floor(Math.min(...vals) / 10) * 10 - 10), hi = Math.min(100, Math.ceil(Math.max(...vals) / 10) * 10 + 10);
+  const x = i => pl + (i / (pts.length - 1)) * (W - pl - pr), y = v => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb);
+  const line = k => { let d = "", pen = false; pts.forEach((p, i) => { if (isNum(p[k])) { d += `${pen ? "L" : "M"}${x(i).toFixed(1)},${y(p[k]).toFixed(1)}`; pen = true; } else pen = false; }); return d; };
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Daily Total M on-date PP%">`;
+  for (let g = lo; g <= hi; g += 10) {
+    s += `<line x1="${pl}" x2="${W - pr}" y1="${y(g)}" y2="${y(g)}" stroke="var(--grid)"/><text x="${pl - 6}" y="${y(g) + 4}" text-anchor="end" font-size="11" fill="var(--muted)">${g}</text>`;
+  }
+  const step = Math.max(1, Math.ceil(pts.length / 12));
+  pts.forEach((p, i) => { if (i % step === 0 || i === pts.length - 1) s += `<text x="${x(i)}" y="${H - 9}" text-anchor="middle" font-size="11" fill="var(--muted)">${dShort(p.report_date)}</text>`; });
+  s += `<path d="${line("pp_ondate_cy")} L${x(pts.length - 1)},${y(lo)} L${x(0)},${y(lo)} Z" fill="var(--cy)" opacity=".08"/>`;
+  s += `<path d="${line("pp_ondate_ly")}" fill="none" stroke="var(--ly)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  s += `<path d="${line("pp_ondate_cy")}" fill="none" stroke="var(--cy)" stroke-width="2.4"/>`;
+  const colW = (W - pl - pr) / Math.max(1, pts.length - 1);
+  pts.forEach((p, i) => {
+    const tt = esc(`<b>${dLong(p.report_date)}</b><br>This year: ${p2(p.pp_ondate_cy)}<br>Last year: ${p2(p.pp_ondate_ly)}<br>Reported ${n0(p.rpt)} &middot; LT ${n0(p.lt)}`);
+    if (isNum(p.pp_ondate_cy)) s += `<circle cx="${x(i)}" cy="${y(p.pp_ondate_cy)}" r="4.5" fill="var(--cy)" stroke="var(--card)" stroke-width="2"/>`;
+    s += `<rect x="${x(i) - colW / 2}" y="${pt}" width="${colW}" height="${H - pt - pb}" fill="transparent" data-tip="${tt}"/>`;
+  });
+  s += "</svg>";
+  return `<div class="chart">${s}</div><div class="legend"><span><i style="background:var(--cy)"></i>Current Year</span><span><i style="background:var(--ly)"></i>Last Year (same date)</span></div>`;
+}
+
+// ---------- detail table ----------
+function table(rows, isToday) {
+  let h = `<div class="tbl"><table><thead>
+    <tr class="grp"><th></th><th colspan="4">Trains</th><th colspan="5">Right time / NLT</th><th colspan="6">Lost time (minutes late)</th><th colspan="3">On-date PP%</th>${isToday ? "" : '<th colspan="2">Month</th><th colspan="2">FY</th>'}</tr>
+    <tr><th>Train type</th><th>Act. Sch.</th><th>Rpt.</th><th>Not Rpt.</th><th>Excp.</th>
+      <th>BT</th><th>RT</th><th>MKUP</th><th>NLT</th><th>Total</th>
+      <th>LT</th><th>1&ndash;15</th><th>16&ndash;30</th><th>31&ndash;45</th><th>46&ndash;60</th><th>&gt;60</th>
+      <th>${isToday ? "So far" : "CY"}</th><th>LY</th><th>Diff</th>${isToday ? "" : "<th>CY</th><th>Diff</th><th>CY</th><th>Diff</th>"}</tr></thead><tbody>`;
+  rows.forEach(r => {
+    const d = onDate(r), m = cum(r, "pp_month_cy", "pp_month_ly"), f = cum(r, "pp_fy_cy", "pp_fy_ly");
+    const tot = r.row_type === "total";
+    h += `<tr class="${tot ? "total" : ""}"><td>${tot ? "Total (M)" : esc(r.train_type) + `<span class="full">${esc(TYPE_NAMES[r.train_type] || "")}</span>`}</td>
+      <td>${n0(r.act_sch)}</td><td>${n0(r.rpt)}</td><td>${n0(r.not_rpt)}</td><td>${n0(r.excp)}</td>
+      <td>${n0(r.bt)}</td><td>${n0(r.rt)}</td><td>${n0(r.mkup)}</td><td>${n0(r.nlt)}</td><td>${n0(r.rt_nlt_total)}</td>
+      <td>${n0(r.lt)}</td><td>${n0(r.lt_1_15)}</td><td>${n0(r.lt_16_30)}</td><td>${n0(r.lt_31_45)}</td><td>${n0(r.lt_46_60)}</td><td>${n0(r.lt_above_60)}</td>
+      <td><b>${p2(d.cy)}</b></td><td>${p2(d.ly)}</td><td>${dl(d.diff)}</td>
+      ${isToday ? "" : `<td>${p2(m.cy)}</td><td>${dl(m.diff)}</td><td>${p2(f.cy)}</td><td>${dl(f.diff)}</td>`}</tr>`;
+  });
+  return h + "</tbody></table></div>";
+}
+
+// ---------- view ----------
+let FEED = null, VIEW = "prev";
+
+function kpi(k, v, s) { return `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div><div class="s">${s}</div></div>`; }
+
+function render() {
+  const view = document.getElementById("view"), vd = document.getElementById("viewdate");
+  document.getElementById("btn-prev").setAttribute("aria-pressed", VIEW === "prev");
+  document.getElementById("btn-today").setAttribute("aria-pressed", VIEW === "today");
+  document.getElementById("btn-sub").setAttribute("aria-pressed", VIEW === "sub");
+  setTitle();
+  if (VIEW === "sub") return renderSub();
+  if (!FEED) return;
+  const isToday = VIEW === "today";
+  const blk = isToday ? FEED.today : FEED.latest;
+  if (!blk || !blk.rows || !blk.rows.length) {
+    vd.innerHTML = "&nbsp;";
+    view.innerHTML = `<div class="card"><div class="empty">${isToday ? "No live snapshot available yet today." : "No previous-day data yet."}</div></div>`;
+    return;
+  }
+  const rows = blk.rows, tot = rows.find(r => r.row_type === "total") || {};
+  const d = onDate(tot), m = cum(tot, "pp_month_cy", "pp_month_ly"), f = cum(tot, "pp_fy_cy", "pp_fy_ly");
+  const todayIso = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+  const dateTxt = `${dLong(blk.report_date)} to ${dLong(blk.report_date)}`;
+
+  vd.innerHTML = isToday
+    ? `<b>${dLong(blk.report_date)}</b> &middot; as of <b>${asOf(blk.as_of)}</b> hrs &middot; partial day`
+    : `<b>${dLong(blk.report_date)}</b> &middot; complete day`;
+
+  let html = "";
+  if (isToday) {
+    html += `<div class="banner">Live position as of ${asOf(blk.as_of)} hrs. ${n0(tot.not_rpt)} of ${n0(tot.act_sch)} trains are not yet reported &mdash; PP% will change through the day. Last-year figures are for the full day.</div>`;
+    if (blk.report_date !== todayIso) html = `<div class="banner">This snapshot is from ${dLong(blk.report_date)}; today's live update has not run yet.</div>` + html;
+  }
+  html += `<div class="kpis">
+    ${kpi(isToday ? "PP% so far" : "On-date PP%", p2(d.cy), `LY ${p2(d.ly)} &nbsp;${dl(d.diff)}`)}
+    ${kpi(`Month (upto ${dShort(blk.report_date)})`, p2(m.cy), `LY ${p2(m.ly)} &nbsp;${dl(m.diff)}`)}
+    ${kpi("Financial Year", p2(f.cy), `LY ${p2(f.ly)} &nbsp;${dl(f.diff)}`)}
+    ${kpi("Reported", `${n0(tot.rpt)}<small> / ${n0(tot.act_sch)}</small>`, `Not reported ${n0(tot.not_rpt)} &middot; Excp. ${n0(tot.excp)}`)}
+    ${kpi("Lost Time (LT)", n0(tot.lt), `RT/NLT ${n0(tot.rt_nlt_total)} &middot; &gt;60 min ${n0(tot.lt_above_60)}`)}
+  </div>`;
+  html += `<div class="grid two">
+    <div class="card"><h3>Punctuality Performance [Mail Express] [BG]<span>${dateTxt}</span></h3><div class="body">${bigPie(tot, "Total (M)")}</div></div>
+    <div class="card"><h3>PP% &mdash; Current vs Last Year<span>${dateTxt}</span></h3><div class="body">${groupBars(tot, blk.report_date, isToday)}</div></div>
+  </div>`;
+  html += `<div class="card" style="margin-bottom:14px"><h3>Train-type composition<span>centre = on-date PP% &middot; hover a slice for counts</span></h3><div class="body">${miniDonuts(rows)}</div></div>`;
+  html += `<div class="grid two">
+    <div class="card"><h3>On-date PP% by train type<span>${isToday ? "so far" : dLong(blk.report_date)}</span></h3><div class="body">${typeBars(rows)}</div></div>
+    <div class="card"><h3>Lost-time break-up &mdash; Total (M)<span>LT trains by minutes late</span></h3><div class="body">${ltBars(tot)}</div></div>
+  </div>`;
+  html += `<div class="card" style="margin-bottom:14px"><h3>Train-type detail<span>${isToday ? `as of ${asOf(blk.as_of)} hrs` : dLong(blk.report_date)}</span></h3><div class="body" style="padding:0">${table(rows, isToday)}</div></div>`;
+  if (!isToday) html += `<div class="card" style="margin-bottom:14px"><h3>Trend &mdash; Total (M) on-date PP%<span>one point per completed day</span></h3><div class="body">${trendChart(FEED.trend)}</div></div>`;
+  view.innerHTML = html;
+}
+
+async function load() {
+  const st = document.getElementById("stamp");
+  st.textContent = "Updating…";
+  try {
+    const res = await fetch(FEED_URL, { cache: "no-store" });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "feed error");
+    FEED = data;
+    if (VIEW !== "sub") render();
+    const live = data.today ? stampFmt(data.today.loaded_at) : "—";
+    const prev = data.latest ? stampFmt(data.latest.loaded_at) : "—";
+    st.innerHTML = `Prev-day data: ${prev}<br>Live data: ${live}`;
+  } catch (e) {
+    st.innerHTML = `<span class="err">Could not load data (${esc(e.message)})</span>`;
+    if (!FEED) document.getElementById("view").innerHTML = '<div class="card"><div class="empty">Data could not be loaded. It will retry automatically.</div></div>';
+  }
+}
+
+// ---------- suburban live tracking ----------
+const SUB_URL = FEED_URL + "?feed=suburban";
+let SUB = null, SUB_ERR = "", SUB_Q = "", SUB_DATES = null, SUB_DAY = "";
+const TITLES = {
+  pam: ["Punctuality Performance &mdash; Mail Express [BG]", "Delhi Division &middot; Mail-Express Group (M) &middot; Source: ICMS PAM"],
+  sub: ["LIVE SUBURBAN TRAINS Tracking", "Delhi Division &middot; Important suburban trains &middot; Source: ICMS Train Running (COA)"],
+};
+function setTitle() {
+  const t = TITLES[VIEW === "sub" ? "sub" : "pam"];
+  document.querySelector(".brand h1").innerHTML = t[0];
+  document.querySelector(".brand .sub").innerHTML = t[1];
+  document.title = VIEW === "sub" ? "LIVE Suburban Trains Tracking - DLI" : "Mail-Express Punctuality Dashboard";
+  document.querySelector("footer").hidden = VIEW === "sub";
+}
+const tOnly = s => { const m = /(\d{1,2}:\d{2})/.exec(s || ""); return m ? m[1] : "—"; };
+// RT rule (Dom, 28-Oct): late <= 0 -> "RT"; arrived at destination 1-15 min late -> "13/RT" (counted right time)
+function rtLabel(v, arrived) {
+  if (v === null || v === undefined || v === "" || isNaN(v)) return "";
+  v = Number(v);
+  if (v <= 0) return "RT";
+  if (arrived && v <= 15) return `${v}/RT`;
+  return v;
+}
+function lateCell(r) {
+  if (r.status === "Yet to start" || r.status === "No data" || r.late === null || r.late === undefined || isNaN(r.late)) return '<span class="dash">—</span>';
+  const v = Number(r.late);
+  if (v < 0) return `<span class="late ok">RT</span> <small class="nm">(${-v} early)</small>`;
+  if (v === 0) return '<span class="late ok">RT</span>';
+  if (r.status === "Arrived" && v <= 15) return `<span class="late ok">${v}/RT</span>`;
+  return `<span class="late ${v > 15 ? "bad" : "mid"}">${v}</span>`;
+}
+function statusTag(s) {
+  const c = { Running: "run", Arrived: "arr", "Yet to start": "yts" }[s] || "nd";
+  return `<span class="st ${c}">${esc(s || "No data")}</span>`;
+}
+function posCell(r) {
+  if (r.status === "No data" || !r.status) return '<span class="dash">Not available in ICMS</span>';
+  if (r.status === "Yet to start") return `Sch. dep <b>${esc(r.stn_code)}</b> ${tOnly(r.sch)}`;
+  const ev = r.event === "Dep" ? "Dep" : "Arr";
+  return `<b>${esc(r.stn_code)}</b> <span class="nm">${esc(r.stn_name || "")}</span><br>${ev} ${tOnly(r.act)} <span class="nm">(Sch ${tOnly(r.sch)})</span>`;
+}
+// ---------- display order (Dom, 29-Oct): group 1 on top + highlighted, then group 2, then the rest ----------
+const GROUP1 = new Set(["64439", "64103", "74022", "64034", "64462", "54424", "54414", "64077",
+  "64492", "64110", "64582", "64021", "64461", "64471", "54423", "54417"]);
+const GROUP2 = new Set(["64105", "64082", "64102", "54473", "54474", "64027", "64470", "64912"]);
+const grp = t => (GROUP1.has(String(t.train)) ? 1 : GROUP2.has(String(t.train)) ? 2 : 3);
+const byShiftTime = (a, b) => (b.shift || "").localeCompare(a.shift || "") || (a.from_time || "").localeCompare(b.from_time || "");
+
+// ---------- remarks (detentions from ICMS TS/1002C) ----------
+const DET_HEADS = { ENG: "Engineering", ENGG: "Engineering", DELC: "Direct Electric", IELC: "Indirect Electric", DCW: "Direct C&W",
+  ICW: "Indirect C&W", ST: "Signal & Telecom", PBOL: "Planned Block Open Line", CNST: "Construction", ACP: "Alarm Chain Pulling",
+  LO: "Law & Order", RUNO: "Run Over", INC: "Incident", PATH: "Path" };
+function dets(t) {
+  if (!t || !t.dets) return [];
+  if (Array.isArray(t.dets)) return t.dets;
+  try { const d = JSON.parse(t.dets); return Array.isArray(d) ? d : []; } catch (e) { return []; }
+}
+function detText(d) { return `${d.type || ""} ${d.code || ""}/${d.sub || ""} ${d.div || ""} ${d.from || ""}-${d.to || ""} ${d.mins ?? ""}' : ${d.remarks || ""}`.replace(/\s+/g, " ").trim(); }
+function showRemarks(t) {
+  const list = dets(t);
+  let box = document.getElementById("rmkbox");
+  if (!box) {
+    box = document.createElement("div"); box.id = "rmkbox";
+    box.addEventListener("click", e => { if (e.target === box || e.target.closest("[data-close]")) box.classList.remove("on"); });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") box.classList.remove("on"); });
+    document.body.appendChild(box);
+  }
+  box.innerHTML = `<div class="in" role="dialog" aria-label="Remarks"><h4><span>Remarks &mdash; ${esc(t.train)} <span class="nm" style="font-weight:500;color:var(--muted)">${esc(t.section)} &middot; ${esc(t.status || "")}${t.late ? " &middot; late " + esc(t.late) : ""}</span></span><button type="button" data-close aria-label="Close">&times;</button></h4>
+    <div class="tbl"><table><thead><tr><th>P/S</th><th>Det. Code</th><th>Sub Code</th><th>Div.</th><th>From&ndash;To</th><th>Min</th><th>Remarks</th></tr></thead><tbody>
+    ${list.map(d => `<tr class="${d.div === "DLI" ? "dli" : ""}"><td><b>${esc(d.type || "")}</b></td><td>${esc(d.code || "")}<div class="nm" style="color:var(--muted);font-size:11px">${esc(DET_HEADS[d.code] || "")}</div></td>
+      <td>${esc(d.sub || "")}</td><td>${esc(d.div || "")}</td><td>${esc(d.from || "")}&ndash;${esc(d.to || "")}</td><td>${esc(d.mins ?? "")}</td><td>${esc(d.remarks || "")}</td></tr>`).join("")}
+    </tbody></table></div><div style="padding:8px 16px;font-size:11.5px;color:var(--muted)">Source: ICMS Train Status Monitoring (TS/1002C). P = primary, S = secondary. DLI division rows highlighted.</div></div>`;
+  box.classList.add("on");
+}
+function origCell(r) {
+  if (!r.origin) return '<span class="dash">—</span>';
+  const head = `<b>${esc(r.origin)}</b> <span class="nm">${esc(r.orig_name || "")}</span>`;
+  if (!r.orig_sch && !r.orig_act) return `${head}<br><span class="nm">departure details not received yet</span>`;
+  if (!r.orig_act) return `${head}<br><span class="nm">Sch. dep ${tOnly(r.orig_sch)} &middot; not departed</span>`;
+  const v = r.orig_late === null || r.orig_late === undefined ? null : Number(r.orig_late);
+  const lt = v === null || isNaN(v) ? "" : v <= 0 ? ' <span class="late ok">RT</span>' : ` <span class="late ${v > 15 ? "bad" : "mid"}">+${v}</span>`;
+  return `${head}<br>Dep ${tOnly(r.orig_act)} <span class="nm">(Sch ${tOnly(r.orig_sch)})</span>${lt}`;
+}
+function renderSub() {
+  const view = document.getElementById("view"), vd = document.getElementById("viewdate");
+  if (!SUB) {
+    vd.innerHTML = "&nbsp;";
+    view.innerHTML = `<div class="card"><div class="empty">${SUB_ERR ? "Suburban data could not be loaded. It will retry automatically." : "Loading&hellip;"}</div></div>`;
+    return;
+  }
+  const trains = SUB.trains || [];
+  vd.innerHTML = SUB.as_of ? `Position as of <b>${esc(SUB.as_of.slice(11, 16))}</b> hrs, <b>${dLong(SUB.as_of.slice(0, 10))}</b> &middot; updated every 30 min` : "&nbsp;";
+  const q = SUB_Q.replace(/\D/g, "");
+  const cnt = s => trains.filter(t => t.status === s).length;
+  let html = `<div class="subbar">
+    <label class="search" title="Search by train number"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="subq" inputmode="numeric" placeholder="Search train no." value="${esc(SUB_Q)}" aria-label="Search by train number"></label>
+    <button type="button" class="xls" id="subxls" title="Download the trains shown below as an Excel file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download Excel</button>
+    <span class="saved" title="Final position of each day, saved at 23:45">Saved day
+      <select id="subday" aria-label="Saved day">${SUB_DATES === null ? '<option value="">loading…</option>' : SUB_DATES.length ? SUB_DATES.map(d => `<option value="${d}"${d === SUB_DAY ? " selected" : ""}>${dLong(d)}</option>`).join("") : '<option value="">none yet</option>'}</select>
+      <button type="button" class="xls alt" id="subdayxls"${SUB_DATES && SUB_DATES.length ? "" : " disabled"}>Excel</button></span>
+    <div class="chips"><span class="chip">Running <b>${cnt("Running")}</b></span><span class="chip">Arrived <b>${cnt("Arrived")}</b></span>
+      <span class="chip">Yet to start <b>${cnt("Yet to start")}</b></span><span class="chip">No data <b>${trains.filter(t => !["Running", "Arrived", "Yet to start"].includes(t.status)).length}</b></span></div></div>`;
+  if (SUB.as_of) {
+    const age = (Date.now() - new Date(SUB.as_of.replace(" ", "T") + ":00+05:30").getTime()) / 60000;
+    if (age > 45) html += `<div class="banner">This position is ${Math.round(age)} minutes old &mdash; the 30-minute update has not run since ${esc(SUB.as_of.slice(11, 16))} hrs.</div>`;
+  }
+  const sections = [...new Set(trains.map(t => t.section))];
+  let shown = 0, blocks = "";
+  const multi = new Set(trains.map(grp)).size > 1;   // highlight / separators only when groups are mixed
+  [1, 2, 3].forEach(g => {
+  let cards = "";
+  sections.forEach(sec => {
+    const list = trains.filter(t => grp(t) === g && t.section === sec && (!q || String(t.train).includes(q))).sort(byShiftTime);
+    if (!list.length) return;
+    shown += list.length;
+    cards += `<div class="card${g === 1 && multi ? " g1" : ""}"><h3>${esc(sec)}<span>${list.length} train${list.length > 1 ? "s" : ""}</span></h3><div><table class="sub">
+      <colgroup><col class="c-tr"><col class="c-rt"><col class="c-or"><col class="c-cp"><col class="c-lt"><col class="c-st"><col class="c-rm"></colgroup>
+      <thead><tr><th>Train</th><th style="text-align:left">Route (DLI list)</th><th style="text-align:left">Started from (origin)</th><th style="text-align:left">Current position</th><th>Late (min)</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
+      ${list.map(t => `<tr class="${q && String(t.train) === q ? "hit" : ""}"><td data-l="Train"><span><b>${esc(t.train)}</b><div class="nm" style="color:var(--muted);font-size:11px">${esc(t.shift || "")}</div></span></td>
+        <td class="route" data-l="Route (DLI list)"><span>${esc(t.from_stn)} ${esc(t.from_time || "")} &rarr; ${esc(t.to_stn)} ${esc(t.to_time || "")}</span></td>
+        <td class="pos" data-l="Started from"><span>${origCell(t)}</span></td><td class="pos" data-l="Current position"><span>${posCell(t)}</span></td>
+        <td data-l="Late (min)"><span>${lateCell(t)}</span></td><td data-l="Status"><span>${statusTag(t.status)}</span></td>
+        <td data-l="Remarks"><span>${dets(t).length ? `<button type="button" class="rmk" data-train="${esc(t.train)}">Remarks (${dets(t).length})</button>` : ""}</span></td></tr>`).join("")}
+      </tbody></table></div></div>`;
+  });
+  if (cards) blocks += `<div class="secs${multi ? " blk" : ""} blk${g}">${cards}</div>`;
+  });
+  html += shown ? blocks : `<div class="card"><div class="empty">${trains.length ? "No train matches &ldquo;" + esc(SUB_Q) + "&rdquo;." : "No suburban data yet."}</div></div>`;
+  html += `<footer style="margin-top:6px">Current position = last station reported in ICMS (COA) &middot; RT = right time, minus = early &middot; Late: amber 1&ndash;15, red &gt;15 min</footer>`;
+  view.innerHTML = html;
+  const box = document.getElementById("subq");
+  document.getElementById("subxls").addEventListener("click", () => downloadSubXlsx(trains.filter(t => !q || String(t.train).includes(q)), sections, SUB.as_of, SUB_Q ? "search: " + SUB_Q : ""));
+  document.getElementById("subday").addEventListener("change", e => { SUB_DAY = e.target.value; });
+  view.querySelectorAll(".rmk").forEach(b => b.addEventListener("click", () => showRemarks(trains.find(t => String(t.train) === b.dataset.train))));
+  document.getElementById("subdayxls").addEventListener("click", downloadSavedDay);
+  box.addEventListener("input", e => { SUB_Q = e.target.value; const pos = e.target.selectionStart; renderSub(); const b = document.getElementById("subq"); b.focus(); b.setSelectionRange(pos, pos); });
+}
+// ---------- one-click Excel (.xlsx) download - built in the browser, no add-ons ----------
+const CRC_T = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files) {   // files: [{name, data: Uint8Array}] - stored (no compression)
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const u16 = v => [v & 255, (v >>> 8) & 255], u32 = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  files.forEach(f => {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const loc = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0)]);
+    parts.push(loc, nm, f.data);
+    cen.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += loc.length + nm.length + sz;
+  });
+  const cenLen = cen.reduce((a, b) => a + b.length, 0);
+  const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cenLen), ...u32(off), ...u16(0)]);
+  return new Blob([...parts, ...cen, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+function xlsxBlob(title, head, rows, widths, rowStyles) {
+  const x = v => String(v ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+  const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const cell = (v, r, c, st) => (typeof v === "number" && isFinite(v))
+    ? `<c r="${col(c)}${r}"${st ? ` s="${st}"` : ""}><v>${v}</v></c>`
+    : `<c r="${col(c)}${r}" t="inlineStr"${st ? ` s="${st}"` : ""}><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+  const all = [[title], [], head, ...rows];
+  const st = i => (i === 0 ? 1 : i === 2 ? 2 : i > 2 && rowStyles ? rowStyles[i - 3] || 0 : 0);
+  const sd = all.map((row, i) => `<row r="${i + 1}">${row.map((v, j) => cell(v, i + 1, j, st(i))).join("")}</row>`).join("");
+  const cols = `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`;
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData><autoFilter ref="A3:${col(head.length - 1)}${all.length}"/></worksheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="3"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF164277"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const E = s => new TextEncoder().encode(s);
+  return zip([
+    { name: "[Content_Types].xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`) },
+    { name: "_rels/.rels", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`) },
+    { name: "xl/workbook.xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Suburban Live" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'Suburban Live'!$A$3:$${col(head.length - 1)}$${all.length}</definedName></definedNames></workbook>`) },
+    { name: "xl/_rels/workbook.xml.rels", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`) },
+    { name: "xl/worksheets/sheet1.xml", data: E(sheet) },
+    { name: "xl/styles.xml", data: E(styles) },
+  ]);
+}
+async function downloadSavedDay() {
+  const day = document.getElementById("subday").value;
+  if (!day) return;
+  const btn = document.getElementById("subdayxls"), txt = btn.textContent;
+  btn.textContent = "…"; btn.disabled = true;
+  try {
+    const res = await fetch(`${FEED_URL}?feed=suburban_day&date=${day}`, { cache: "no-store" });
+    const d = await res.json();
+    if (!d.ok || !d.trains || !d.trains.length) throw new Error(d.error || "no data saved for this day");
+    downloadSubXlsx(d.trains, [...new Set(d.trains.map(t => t.section))], d.as_of, "final position of the day");
+  } catch (e) { alert(`Could not download ${dLong(day)}: ${e.message}`); }
+  btn.textContent = txt; btn.disabled = false;
+}
+async function loadSubDates() {
+  try {
+    const res = await fetch(`${FEED_URL}?feed=suburban_dates`, { cache: "no-store" });
+    const d = await res.json();
+    SUB_DATES = d.ok && Array.isArray(d.dates) ? d.dates : [];
+  } catch (e) { SUB_DATES = []; }
+  if (!SUB_DAY && SUB_DATES.length) SUB_DAY = SUB_DATES[0];
+  if (VIEW === "sub") render();
+}
+function downloadSubXlsx(list, sections, asof, note) {
+  const order = new Map(sections.map((s, i) => [s, i]));
+  const sorted = list.slice().sort((a, b) => grp(a) - grp(b) || order.get(a.section) - order.get(b.section) || byShiftTime(a, b));
+  const styles = [];
+  const rows = [];
+  sorted.forEach((t, i) => {
+    if (i && grp(t) !== grp(sorted[i - 1])) { rows.push([]); styles.push(0); }   // gap between groups
+    rows.push(rowOf(t)); styles.push(grp(t) === 1 ? 3 : 0);
+  });
+  function rowOf(t) {
+    const live = t.status === "Running" || t.status === "Arrived";
+    const hm = v => (tOnly(v) === "—" ? "" : tOnly(v));
+    return [t.section, t.train, t.shift, `${t.from_stn || ""} ${t.from_time || ""}`.trim(), `${t.to_stn || ""} ${t.to_time || ""}`.trim(),
+        t.origin || "", hm(t.orig_sch), t.orig_act ? hm(t.orig_act) : "", t.orig_act ? rtLabel(t.orig_late, false) : "",
+        live ? (t.stn_code || "") : "", live ? hm(t.act) : "", live ? rtLabel(t.late, t.status === "Arrived") : "",
+        dets(t).map(detText).join(" | ")];
+  }
+  const head = ["Section", "Train No.", "Shift", "From", "To", "Origin", "Origin Sch. Dep", "Origin Act. Dep", "Origin late (min)", "Current stn", "Act. time", "Late (min)", "Remarks"];
+  const widths = [11, 10, 9.7, 18, 15.4, 11, 19.1, 19, 20.3, 10, 13.6, 14.6, 90];
+  asof = asof || "";
+  const title = `LIVE SUBURBAN TRAINS Tracking - Delhi Division - position as of ${asof.slice(11, 16)} hrs ${asof ? dLong(asof.slice(0, 10)) : ""}${note ? " - " + note : ""}`;
+  const blob = xlsxBlob(title, head, rows, widths, styles);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `LIVE_Suburban_${asof ? asof.replace(/[-: ]/g, "").replace(/^(\d{8})(\d{4})$/, "$1_$2") : "now"}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+async function loadSub() {
+  try {
+    const res = await fetch(SUB_URL, { cache: "no-store" });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "feed error");
+    SUB = data; SUB_ERR = "";
+  } catch (e) { SUB_ERR = e.message; }
+  if (VIEW === "sub") render();
+}
+
+// ---------- controls ----------
+document.getElementById("btn-prev").addEventListener("click", () => { VIEW = "prev"; history.replaceState(null, "", "#"); render(); });
+document.getElementById("btn-today").addEventListener("click", () => { VIEW = "today"; history.replaceState(null, "", "#"); render(); });
+document.getElementById("btn-sub").addEventListener("click", () => { VIEW = "sub"; history.replaceState(null, "", "#suburban"); render(); loadSub(); loadSubDates(); });
+document.getElementById("refresh").addEventListener("click", () => { load(); loadSub(); });
+const skinSel = document.getElementById("skin");
+function setSkin(v) { document.documentElement.setAttribute("data-skin", v); skinSel.value = v; try { localStorage.setItem("pam-skin", v); } catch (e) {} }
+let saved = "navy"; try { saved = localStorage.getItem("pam-skin") || "navy"; } catch (e) {}
+setSkin(saved);
+skinSel.addEventListener("change", e => setSkin(e.target.value));
+
+if (location.hash === "#suburban" || SUB_ONLY) VIEW = "sub";
+if (SUB_ONLY) {
+  document.querySelector(".seg").hidden = true;
+  document.getElementById("stamp").hidden = true;
+  document.getElementById("refresh").onclick = null;
+  document.getElementById("refresh").addEventListener("click", () => { loadSub(); loadSubDates(); });
+}
+render();
+if (!SUB_ONLY) { load(); setInterval(load, REFRESH_MS); }
+loadSub();
+loadSubDates();
+setInterval(loadSub, REFRESH_MS);
+</script>
+</body>
+</html>
