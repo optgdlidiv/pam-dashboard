@@ -31,7 +31,7 @@
   .chip b { color: var(--ink); }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
   .tbl { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; table-layout: fixed; min-width: 980px; }
+  table { border-collapse: collapse; width: 100%; table-layout: fixed; min-width: 1100px; }
   th, td { padding: 8px 10px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; }
   thead th { background: var(--card-head); font-size: 12px; color: var(--ink-2); font-weight: 600; white-space: nowrap; }
   thead tr.grp th { text-align: center; border-bottom: 1px solid var(--border); font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; }
@@ -55,6 +55,8 @@
   .sec.chk h2.big2 { font-size: 16px; border-top: 2px dashed #e0b56a; padding-top: 14px; margin-top: 26px; }
   .chip.warn { background: #fff3d6; border-color: #e0b56a; color: #6e4b00; }
   .st.Link { background: #fff3d6; color: #8a4b00; }
+  .pm { display: inline-block; margin-top: 3px; font-size: 11px; border-radius: 4px; padding: 0 6px; background: #eef0f4; color: #4c5668; }
+  .pm.dli { background: #e9f6ee; color: #0a6b2e; font-weight: 600; }
   .empty { padding: 30px; text-align: center; color: var(--muted); }
   footer { color: var(--muted); font-size: 11.5px; padding: 14px 4px; }
   #rmkbox { display: none; position: fixed; inset: 0; background: rgba(10,20,40,.45); z-index: 50; align-items: center; justify-content: center; padding: 14px; }
@@ -91,7 +93,8 @@
     <span class="chips" id="chips"></span>
   </div>
   <div id="view"><div class="card"><div class="empty">Loading&hellip;</div></div></div>
-  <footer>Link train position from ICMS Train Running Position (TS/1002F); remarks from Train Status Monitoring (TS/1002C).
+  <footer>Departure = outgoing train's actual departure from our terminal (ICMS, read from 20 min before sch. dep). Maintenance type / slot from the TOD SPLs sheet.
+    Link train position from ICMS Train Running Position (TS/1002F); remarks from Train Status Monitoring (TS/1002C).
     Expected arrival = scheduled arrival at our terminal + present late running. Updated every 30 min; this page refreshes itself.</footer>
 </main>
 <script>
@@ -140,14 +143,27 @@ const TERM_NAME = { NDLS: "New Delhi", DLI: "Delhi Jn.", NZM: "Hazrat Nizamuddin
   SSB: "Shakur Basti", DEE: "Delhi Sarai Rohilla", DSA: "Delhi Shahdara", ROK: "Rohtak", GZB: "Ghaziabad" };
 const termRank = c => { const i = TERM_ORDER.indexOf(c); return i < 0 ? 100 : i; };
 function statusCls(s) { return (s || "No").split(" ")[0]; }
+function pmTag(t) {
+  if (!t.pm) return "";
+  const dli = /\bDLI\b/i.test(t.pm);
+  return `<br><span class="pm ${dli ? "dli" : ""}" title="Type of maintenance${t.pm_slot ? " / slot" : ""}">${esc(t.pm)}${dli && t.pm_slot ? " &middot; " + esc(t.pm_slot.replace(/\(\s*/g, "(").replace(/\s*\)/g, ")").replace(/\s*-\s*/g, "-")) : ""}</span>`;
+}
+function depCell(t, today) {
+  if (t.kind === "NOOUT") return '<span class="dash">&mdash;</span>';
+  if (t.out_status === "Departed") return `<span class="st Arrived">Departed</span><br>${when(t.out_act_dep, today)} ${lateSpan(t.out_late)}`;
+  if (t.out_status === "Not departed") return `<span class="st No">Not departed</span>`;
+  if (t.out_status === "Due") return `<span class="st Yet">Due</span>`;
+  return '<span class="dash">&mdash;</span>';
+}
 function rowHtml(t, today) {
   const term = t.from_stn || "";
   const pos = t.stn_code ? `<b>${esc(t.stn_code)}</b> <span class="nm">${esc(t.stn_name || "")}</span><br><span class="nm">${esc(t.event || "")} ${esc(tOnly(t.act) || (t.status === "Yet to start" ? "sch " + tOnly(t.sch) : ""))}</span>` : `<span class="dash">&mdash;</span>`;
   const arr = t.term_act_arr ? `${when(t.term_act_arr, today)} <span class="nm">arrived</span>` : t.term_exp_arr ? `${when(t.term_exp_arr, today)} <span class="nm">expected</span>` : '<span class="dash">&mdash;</span>';
   const d = dets(t).length;
   return `<tr>
-    <td data-l="Train"><span><span class="tn">${esc(t.train)}</span><br><span class="nm">${t.kind === "NOOUT" ? "not running today" : esc(t.from_stn) + (t.to_stn ? " &rarr; " + esc(t.to_stn) : "")}</span></span></td>
+    <td data-l="Train"><span><span class="tn">${esc(t.train)}</span><br><span class="nm">${t.kind === "NOOUT" ? "not running today" : esc(t.from_stn) + (t.to_stn ? " &rarr; " + esc(t.to_stn) : "")}</span>${pmTag(t)}</span></td>
     <td data-l="Sch. Dep"><span class="big">${esc(tOnly(t.sch_dep) || t.sch_dep || "")}</span><br><span class="nm">${esc(term)}</span></td>
+    <td data-l="Departure"><span>${depCell(t, today)}</span></td>
     <td class="sepl" data-l="Link rake"><span>${t.link ? `<span class="tn">${esc(t.link)}</span><br><span class="nm">${esc(t.origin || "")}${t.origin ? " &rarr; " : ""}${esc(t.dest || "")}${t.link_start ? " &middot; start " + esc(dLong(t.link_start).slice(0, 6)) : ""}</span>` : '<span class="dash">not given</span>'}</span></td>
     <td data-l="Status"><span><span class="st ${statusCls(t.status)}">${esc(t.status || "No data")}</span>${t.note ? `<br><span class="nm">${esc(t.note)}</span>` : ""}</span></td>
     <td data-l="Current position"><span>${pos}</span></td>
@@ -162,12 +178,12 @@ function section(title, list, today, word, cls) {
   if (!list.length) return "";
   const n = s => list.filter(t => t.status === s).length;
   let html = `<div class="sec ${cls || ""}"><h2>${title} <span class="nm">${list.length} train${list.length > 1 ? "s" : ""} &middot; link arrived ${n("Arrived")} &middot; running ${n("Running")} &middot; yet to start ${n("Yet to start")}</span></h2></div>
-    <div class="card"><div class="tbl"><table><colgroup><col style="width:10%"><col style="width:8%"><col style="width:15%"><col style="width:12%"><col style="width:18%"><col style="width:6%"><col style="width:9%"><col style="width:12%"><col style="width:10%"></colgroup><thead>
-    <tr class="grp"><th colspan="2">Outgoing ${word}</th><th class="sepl" colspan="4">Incoming link rake &mdash; running position</th><th class="sepl" colspan="2">Link at our terminal</th><th class="sepl"></th></tr>
-    <tr><th>Train</th><th>Sch. Dep</th><th class="sepl">Link rake</th><th>Status</th><th>Current position</th><th>Late</th><th class="sepl">Sch. Arr</th><th>Act. / Exp. Arr</th><th class="sepl">Remarks</th></tr></thead><tbody>`;
+    <div class="card"><div class="tbl"><table><colgroup><col style="width:11%"><col style="width:7%"><col style="width:9%"><col style="width:12%"><col style="width:10%"><col style="width:15%"><col style="width:5%"><col style="width:8%"><col style="width:11%"><col style="width:9%"></colgroup><thead>
+    <tr class="grp"><th colspan="3">Outgoing ${word}</th><th class="sepl" colspan="4">Incoming link rake &mdash; running position</th><th class="sepl" colspan="2">Link at our terminal</th><th class="sepl"></th></tr>
+    <tr><th>Train</th><th>Sch. Dep</th><th>Departure</th><th class="sepl">Link rake</th><th>Status</th><th>Current position</th><th>Late</th><th class="sepl">Sch. Arr</th><th>Act. / Exp. Arr</th><th class="sepl">Remarks</th></tr></thead><tbody>`;
   list.forEach((t, i) => {
     if (i === 0 || list[i - 1].from_stn !== t.from_stn)
-      html += `<tr class="term"><td colspan="9">${esc(t.from_stn || "-")} <span class="nm">${esc(TERM_NAME[t.from_stn] || "")} &middot; ${list.filter(r => r.from_stn === t.from_stn).length} train${list.filter(r => r.from_stn === t.from_stn).length > 1 ? "s" : ""}</span></td></tr>`;
+      html += `<tr class="term"><td colspan="10">${esc(t.from_stn || "-")} <span class="nm">${esc(TERM_NAME[t.from_stn] || "")} &middot; ${list.filter(r => r.from_stn === t.from_stn).length} train${list.filter(r => r.from_stn === t.from_stn).length > 1 ? "s" : ""}</span></td></tr>`;
     html += rowHtml(t, today);
   });
   return html + `</tbody></table></div></div>`;
