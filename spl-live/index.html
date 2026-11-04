@@ -26,6 +26,8 @@
   .search { display: flex; align-items: center; gap: 6px; background: var(--card); border: 1px solid var(--border);
             border-radius: 8px; padding: 6px 10px; color: var(--muted); }
   .search input { border: 0; outline: 0; font: inherit; width: 150px; background: transparent; color: var(--ink); }
+  .xls { font: inherit; font-size: 13px; font-weight: 600; color: #fff; background: var(--accent); border: 0; border-radius: 8px; padding: 7px 13px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
+  .xls:hover { filter: brightness(1.08); }
   .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
   .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 3px 10px; font-size: 12.5px; color: var(--ink-2); }
   .chip b { color: var(--ink); }
@@ -98,6 +100,7 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input id="q" inputmode="numeric" placeholder="Search train no." aria-label="Search by train number">
     </label>
+    <button type="button" class="xls" id="xls" title="Download what is shown below as an Excel file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>Download Excel</button>
     <span class="asof" id="asof">Loading&hellip;</span>
     <span class="chips" id="chips"></span>
   </div>
@@ -229,6 +232,92 @@ function render() {
   view.innerHTML = html || `<div class="card"><div class="empty">${all.length ? "No train matches the search." : "No train for today in the list."}</div></div>`;
   view.querySelectorAll("button.rmk").forEach(b => b.addEventListener("click", () => showRemarks(all.find(t => t.train === b.dataset.k))));
 }
+// ---------- one-click Excel (.xlsx) download - built in the browser, no add-ons ----------
+const CRC_T = (() => { const t = []; for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zip(files) {   // files: [{name, data: Uint8Array}] - stored (no compression)
+  const enc = new TextEncoder(), parts = [], cen = []; let off = 0;
+  const u16 = v => [v & 255, (v >>> 8) & 255], u32 = v => [v & 255, (v >>> 8) & 255, (v >>> 16) & 255, (v >>> 24) & 255];
+  files.forEach(f => {
+    const nm = enc.encode(f.name), crc = crc32(f.data), sz = f.data.length;
+    const loc = new Uint8Array([...u32(0x04034b50), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0)]);
+    parts.push(loc, nm, f.data);
+    cen.push(new Uint8Array([...u32(0x02014b50), ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0x21), ...u32(crc), ...u32(sz), ...u32(sz), ...u16(nm.length), ...u16(0), ...u16(0), ...u16(0), ...u16(0), ...u32(0), ...u32(off)]), nm);
+    off += loc.length + nm.length + sz;
+  });
+  const cenLen = cen.reduce((a, b) => a + b.length, 0);
+  const end = new Uint8Array([...u32(0x06054b50), ...u16(0), ...u16(0), ...u16(files.length), ...u16(files.length), ...u32(cenLen), ...u32(off), ...u16(0)]);
+  return new Blob([...parts, ...cen, end], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+}
+const SHEET = "Link Rakes";
+function xlsxBlob(title, head, rows, widths, rowStyles) {
+  const x = v => String(v ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, "");
+  const col = i => { let s = ""; i++; while (i) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+  const cell = (v, r, c, st) => (typeof v === "number" && isFinite(v))
+    ? `<c r="${col(c)}${r}"${st ? ` s="${st}"` : ""}><v>${v}</v></c>`
+    : `<c r="${col(c)}${r}" t="inlineStr"${st ? ` s="${st}"` : ""}><is><t xml:space="preserve">${x(v)}</t></is></c>`;
+  const all = [[title], [], head, ...rows];
+  const st = i => (i === 0 ? 1 : i === 2 ? 2 : i > 2 && rowStyles ? rowStyles[i - 3] || 0 : 0);
+  const sd = all.map((row, i) => `<row r="${i + 1}">${row.map((v, j) => cell(v, i + 1, j, st(i))).join("")}</row>`).join("");
+  const cols = `<cols>${widths.map((w, i) => `<col min="${i + 1}" max="${i + 1}" width="${w}" customWidth="1"/>`).join("")}</cols>`;
+  const sheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="3" topLeftCell="A4" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>${cols}<sheetData>${sd}</sheetData><autoFilter ref="A3:${col(head.length - 1)}${all.length}"/></worksheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="4"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="14"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FF0D2747"/><name val="Calibri"/></font></fonts><fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF164277"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE2F4E8"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFDCE6F4"/></patternFill></fill></fills><borders count="1"><border/></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="3" borderId="0" xfId="0" applyFill="1"/><xf numFmtId="0" fontId="0" fillId="4" borderId="0" xfId="0" applyFill="1"/><xf numFmtId="0" fontId="3" fillId="5" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const E = s => new TextEncoder().encode(s);
+  return zip([
+    { name: "[Content_Types].xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`) },
+    { name: "_rels/.rels", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`) },
+    { name: "xl/workbook.xml", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${SHEET}" sheetId="1" r:id="rId1"/></sheets><definedNames><definedName name="_xlnm._FilterDatabase" localSheetId="0" hidden="1">'${SHEET}'!$A$3:$${col(head.length - 1)}$${all.length}</definedName></definedNames></workbook>`) },
+    { name: "xl/_rels/workbook.xml.rels", data: E(`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`) },
+    { name: "xl/worksheets/sheet1.xml", data: E(sheet) },
+    { name: "xl/styles.xml", data: E(styles) },
+  ]);
+}
+
+function lateTxt(v) { if (v === null || v === undefined || v === "" || isNaN(Number(v))) return ""; return Number(v) <= 0 ? "RT" : Number(v); }
+function hmOnly(v) { return tOnly(v) || ""; }
+function downloadXlsx() {
+  if (!DATA) return;
+  const raw = DATA.trains || [], q = Q.replace(/\D/g, "");
+  const hit = t => !q || String(t.train).includes(q) || String(t.link || "").includes(q);
+  const all = raw.filter(t => t.status !== "Not running today").sort(sorter).filter(hit);
+  const groups = [["FESTIVAL SPECIALS", all.filter(t => !t.kind || t.kind === "SPL")],
+    ["SCHEDULED TRAINS", all.filter(t => t.kind === "REG")],
+    ["RAKE LINK CHECK - outgoing runs today, its link rake is NOT due", all.filter(t => t.kind === "NOLINK")],
+    ["RAKE LINK CHECK - link rake arrives today, its outgoing does NOT run today", all.filter(t => t.kind === "NOOUT")],
+    ["NOT RUNNING TODAY (outgoing and link)", raw.filter(t => t.status === "Not running today").filter(hit)]];
+  const head = ["Terminal", "Train No.", "To", "Name", "Days of run", "Maintenance", "PM slot", "Sch. Dep", "Departure",
+    "Act. Dep", "Dep. late (min)", "Link rake", "Link start", "Link days", "Link status", "Current stn", "Act. time",
+    "Late (min)", "Sch. Arr at terminal", "Act. Arr", "Exp. Arr", "Note / ICMS link check", "Remarks"];
+  const rows = [], styles = [];
+  groups.forEach(([title, list]) => {
+    if (!list.length) return;
+    if (rows.length) { rows.push([]); styles.push(0); }
+    rows.push([`${title} (${list.length})`]); styles.push(5);
+    list.forEach(t => {
+      const p = prof(t), live = t.status === "Running" || t.status === "Arrived";
+      const chk = [t.note, p.link_ok === false ? "ICMS rake link: " + (p.icms_link || []).join(", ") : "",
+        p.suggest ? `As per ICMS timetable rake comes by ${p.suggest} (arr ${p.suggest_arr})` : "",
+        p.link_next_arr ? `Next ${t.link} due ${p.link_next_arr}` : ""].filter(Boolean).join("; ");
+      rows.push([t.from_stn || "", t.train, t.to_stn || "", p.out_name || "", p.out_days || "", t.pm || "",
+        /\bDLI\b/i.test(t.pm || "") ? (t.pm_slot || "") : "", hmOnly(t.sch_dep) || t.sch_dep || "",
+        t.kind === "NOOUT" ? "not running today" : (t.out_status || ""), t.out_status === "Departed" ? hmOnly(t.out_act_dep) : "",
+        t.out_status === "Departed" ? lateTxt(t.out_late) : "", t.link || "", t.link_start ? dLong(t.link_start) : "",
+        p.link_days || "", t.status || "", live ? (t.stn_code || "") : "", live ? hmOnly(t.act) : "", live ? lateTxt(t.late) : "",
+        t.term_sch_arr || "", t.term_act_arr || "", t.term_act_arr ? "" : (t.term_exp_arr || ""), chk,
+        dets(t).map(d => `${d.type || ""} ${d.code || ""}/${d.sub || ""} ${d.div || ""} ${d.from || ""}-${d.to || ""} ${d.mins ?? ""}' : ${d.remarks || ""}`.replace(/\s+/g, " ").trim()).join(" | ")]);
+      styles.push(/\bDLI\b/i.test(t.pm || "") ? 4 : 0);
+    });
+  });
+  const widths = [9, 9, 8, 26, 22, 18, 16, 9, 13, 9, 13, 10, 12, 18, 14, 11, 9, 10, 18, 13, 13, 50, 90];
+  const asof = DATA.as_of || "";
+  const title = `LINK RAKE MONITORING - Festival Specials & Scheduled Trains - Delhi Division - ${dLong(DATA.date)} - position as of ${asof.slice(11, 16)} hrs${q ? " - search: " + Q : ""}  (green rows = PM at DLI)`;
+  const blob = xlsxBlob(title, head, rows, widths, styles);
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `Link_Rakes_${asof ? asof.replace(/[-: ]/g, "").replace(/^(\d{8})(\d{4})$/, "$1_$2") : "now"}.xlsx`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
 async function load() {
   try {
     const res = await fetch(FEED_URL, { cache: "no-store" });
@@ -238,6 +327,7 @@ async function load() {
   } catch (e) { ERR = true; }
   render();
 }
+document.getElementById("xls").addEventListener("click", downloadXlsx);
 document.getElementById("q").addEventListener("input", e => { Q = e.target.value; render(); });
 load();
 setInterval(load, 2 * 60 * 1000);
