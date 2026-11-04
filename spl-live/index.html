@@ -59,7 +59,13 @@
   .nm2 { font-size: 11px; }
   .chk-note { margin-top: 4px; font-size: 11.5px; color: #8a4b00; background: #fff8e6; border-left: 3px solid #e0b56a; padding: 3px 6px; border-radius: 3px; }
   .pm { display: inline-block; margin-top: 3px; font-size: 11px; border-radius: 4px; padding: 0 6px; background: #eef0f4; color: #4c5668; }
-  .pm.dli { background: #e9f6ee; color: #0a6b2e; font-weight: 600; }
+  .pm.dli { background: #0a8a3a; color: #fff; font-weight: 600; }
+  .pm:not(.dli) { background: #fde7cf; color: #8a4b00; font-weight: 600; }
+  tr.pmdli > td { background: #eaf7ee; }
+  tr.pmdli > td:first-child { box-shadow: inset 4px 0 0 #0a8a3a; }
+  tr.pmout > td:first-child { box-shadow: inset 4px 0 0 #e08a2e; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); margin: -4px 2px 10px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 5px; }
   .empty { padding: 30px; text-align: center; color: var(--muted); }
   footer { color: var(--muted); font-size: 11.5px; padding: 14px 4px; }
   #rmkbox { display: none; position: fixed; inset: 0; background: rgba(10,20,40,.45); z-index: 50; align-items: center; justify-content: center; padding: 14px; }
@@ -95,6 +101,7 @@
     <span class="asof" id="asof">Loading&hellip;</span>
     <span class="chips" id="chips"></span>
   </div>
+  <div class="legend"><span><i style="background:#eaf7ee;box-shadow:inset 4px 0 0 #0a8a3a"></i>PM at DLI</span><span><i style="background:#fff;box-shadow:inset 4px 0 0 #e08a2e;border:1px solid #d6dfeb"></i>PM at other end</span></div>
   <div id="view"><div class="card"><div class="empty">Loading&hellip;</div></div></div>
   <footer>Departure = outgoing train's actual departure from our terminal (ICMS, read from 20 min before sch. dep). Maintenance type / slot from the TOD SPLs sheet. Days of run and ICMS rake link from ICMS Train Profiles (1001).
     Link train position from ICMS Train Running Position (TS/1002F); remarks from Train Status Monitoring (TS/1002C).
@@ -171,7 +178,8 @@ function rowHtml(t, today) {
   const pos = t.stn_code ? `<b>${esc(t.stn_code)}</b> <span class="nm">${esc(t.stn_name || "")}</span><br><span class="nm">${esc(t.event || "")} ${esc(tOnly(t.act) || (t.status === "Yet to start" ? "sch " + tOnly(t.sch) : ""))}</span>` : `<span class="dash">&mdash;</span>`;
   const arr = t.term_act_arr ? `${when(t.term_act_arr, today)} <span class="nm">arrived</span>` : t.term_exp_arr ? `${when(t.term_exp_arr, today)} <span class="nm">expected</span>` : '<span class="dash">&mdash;</span>';
   const d = dets(t).length;
-  return `<tr>
+  const pmCls = !t.pm ? "" : /\bDLI\b/i.test(t.pm) ? "pmdli" : "pmout";
+  return `<tr class="${pmCls}">
     <td data-l="Train"><span><span class="tn">${esc(t.train)}</span><br><span class="nm">${t.kind === "NOOUT" ? "not running today" : esc(t.from_stn) + (t.to_stn ? " &rarr; " + esc(t.to_stn) : "")}</span>${prof(t).out_name ? `<br><span class="nm nm2">${esc(prof(t).out_name)}</span>` : ""}${prof(t).out_days && prof(t).out_days !== "Daily" ? `<br><span class="days">${esc(prof(t).out_days)}</span>` : ""}${pmTag(t)}</span></td>
     <td data-l="Sch. Dep"><span class="big">${esc(tOnly(t.sch_dep) || t.sch_dep || "")}</span><br><span class="nm">${esc(term)}</span></td>
     <td data-l="Departure"><span>${depCell(t, today)}</span></td>
