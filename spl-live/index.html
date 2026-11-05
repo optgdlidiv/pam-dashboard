@@ -60,6 +60,7 @@
   .days { display: inline-block; margin-top: 3px; font-size: 11px; border-radius: 4px; padding: 0 6px; background: #e8eefa; color: #1650a0; }
   .nm2 { font-size: 11px; }
   .chk-note { margin-top: 4px; font-size: 11.5px; color: #8a4b00; background: #fff8e6; border-left: 3px solid #e0b56a; padding: 3px 6px; border-radius: 3px; }
+  .exc { font-size: 11.5px; color: #7a1f1f; background: #fdecec; border-left: 3px solid #d13b3b; padding: 3px 6px; border-radius: 3px; margin-bottom: 4px; }
   .pm { display: inline-block; margin-top: 3px; font-size: 11px; border-radius: 4px; padding: 0 6px; background: #eef0f4; color: #4c5668; }
   .pm.dli { background: #0a8a3a; color: #fff; font-weight: 600; }
   .pm:not(.dli) { background: #fde7cf; color: #8a4b00; font-weight: 600; }
@@ -164,6 +165,12 @@ function profNote(t) {
   if (p.link_next_arr) out.push(`Next ${esc(t.link)} due ${esc(p.link_next_arr)}`);
   return out.length ? `<div class="chk-note">${out.join("<br>")}</div>` : "";
 }
+function excNote(t) {
+  const p = prof(t), out = [];
+  if (p.out_exc) out.push(`<b>${esc(t.train)}:</b> ${esc(p.out_exc)}`);
+  if (p.link_exc) out.push(`<b>${esc(t.link)}:</b> ${esc(p.link_exc)}`);
+  return out.length ? `<div class="exc">${out.join("<br>")}</div>` : "";
+}
 function pmTag(t) {
   if (!t.pm) return "";
   const dli = /\bDLI\b/i.test(t.pm);
@@ -172,7 +179,10 @@ function pmTag(t) {
 function depCell(t, today) {
   if (t.kind === "NOOUT") return '<span class="dash">&mdash;</span>';
   if (t.out_status === "Departed") return `<span class="st Arrived">Departed</span><br>${when(t.out_act_dep, today)} ${lateSpan(t.out_late)}`;
-  if (t.out_status === "Not departed") return `<span class="st No">Not departed</span>`;
+  if (t.out_status === "Not departed") {
+    const m = /new start\s+\S+\s+(\d{1,2}:\d{2})/.exec(prof(t).out_exc || "");
+    return `<span class="st No">Not departed</span>${m ? `<br><span class="st Link">Resch. ${esc(m[1])}</span>` : ""}`;
+  }
   if (t.out_status === "Due") return `<span class="st Yet">Due</span>`;
   return '<span class="dash">&mdash;</span>';
 }
@@ -192,7 +202,7 @@ function rowHtml(t, today) {
     <td data-l="Late"><span>${lateSpan(t.late) || '<span class="dash">&mdash;</span>'}</span></td>
     <td class="sepl" data-l="Sch. Arr ${esc(term)}"><span>${when(t.term_sch_arr, today)}</span></td>
     <td data-l="Act./Exp. Arr"><span>${arr}</span></td>
-    <td class="sepl" data-l="Remarks"><span>${d ? `<button type="button" class="rmk" data-k="${esc(t.train)}">Remarks (${d})</button>` : ""}</span></td></tr>`;
+    <td class="sepl" data-l="Remarks"><span>${excNote(t)}${d ? `<button type="button" class="rmk" data-k="${esc(t.train)}">Remarks (${d})</button>` : ""}</span></td></tr>`;
 }
 const sorter = (a, b) => termRank(a.from_stn) - termRank(b.from_stn) || (a.from_stn || "").localeCompare(b.from_stn || "")
   || (a.sch_dep || "99").localeCompare(b.sch_dep || "99") || a.train.localeCompare(b.train);
@@ -297,7 +307,8 @@ function downloadXlsx() {
       const p = prof(t), live = t.status === "Running" || t.status === "Arrived";
       const chk = [t.note, p.link_ok === false ? "ICMS rake link: " + (p.icms_link || []).join(", ") : "",
         p.suggest ? `As per ICMS timetable rake comes by ${p.suggest} (arr ${p.suggest_arr})` : "",
-        p.link_next_arr ? `Next ${t.link} due ${p.link_next_arr}` : ""].filter(Boolean).join("; ");
+        p.link_next_arr ? `Next ${t.link} due ${p.link_next_arr}` : "",
+        p.out_exc ? `${t.train}: ${p.out_exc}` : "", p.link_exc ? `${t.link}: ${p.link_exc}` : ""].filter(Boolean).join("; ");
       rows.push([t.from_stn || "", t.train, t.to_stn || "", p.out_name || "", p.out_days || "", t.pm || "",
         /\bDLI\b/i.test(t.pm || "") ? (t.pm_slot || "") : "", hmOnly(t.sch_dep) || t.sch_dep || "",
         t.kind === "NOOUT" ? "not running today" : (t.out_status || ""), t.out_status === "Departed" ? hmOnly(t.out_act_dep) : "",
