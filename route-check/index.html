@@ -46,7 +46,7 @@
   .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
   .kside { padding-bottom: 16px; }
   .kside .ch h2 span { display: inline-block; font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
-  .knums { display: grid; grid-template-columns: 1.15fr 1.15fr .9fr .9fr; gap: 12px; padding: 12px 18px 12px; }
+  .knums { display: grid; grid-template-columns: 1.2fr 1.2fr .9fr; gap: 12px; padding: 12px 18px 12px; }
   .kn { border-radius: 10px; padding: 10px 12px; background: var(--card-head); }
   .kn .l { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; color: var(--ink-2); }
   .kn .v { font-size: 34px; font-weight: 700; line-height: 1.1; margin-top: 2px; font-variant-numeric: tabular-nums; }
@@ -207,7 +207,7 @@
     <b>Right routed</b>: the train entered (receipt / taken over) or left (despatch / handed over) Delhi Division at the I/C point
     where the RBS shortest path crosses the DLI boundary (or within 5 stations of it).
     <b>Wrong routed</b>: the RBS path crosses DLI at another I/C point, or does not touch DLI at all.
-    <b>Via DFC</b>: taken over from / handed over to WDFC or EDFC &ndash; RBS ShortPath does not cover the DFC, so not judged.
+    RBS paths include the DFC (WDFC / EDFC sections), so DFC I/C points are judged like any other.
     <b>Not checked</b>: RBS did not accept a station code (sidings) or gave no path. Tile level: High &ge; 40 % wrong, Medium 20&ndash;40 %, Low &lt; 20 % of judged trains.<br>
     RBS ShortPath gives the shortest chargeable route; a train diverted on authority (block, rationalised route, line capacity) also shows as
     differing from it. Source: FOIS MA4 train-wise interchange (previous day) and RBS ShortPath (rbs.indianrail.gov.in).
@@ -230,8 +230,6 @@ const ICON = {
 };
 const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", DFC: "Via DFC", NA: "Not checked" };
 const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
-// RBS ShortPath has no DFC: a crossing at a WDFC / EDFC I/C point is shown apart, not as wrong routed
-const isDFC = r => /^(WDFC|EDFC)-/.test(r.ic_point || "");
 const patKey = r => `${r.side}|${r.ic_point}|${r.verdict === "NOT VIA DLI" ? "NOT VIA DLI" : (r.rbs_ic || r.rbs_boundary || "?")}`;
 let DATES = [], DAY = null, FILTER = "WRONG", Q = "", SEL = null, PAT = null, PAT_ALL = false;
 
@@ -258,7 +256,6 @@ async function load(date) {
   document.getElementById("asof").textContent = "Loading…";
   const d = await getJSON("feed=route&date=" + encodeURIComponent(date));
   if (!d.ok) { fail(d.error || "No data for this day."); return; }
-  d.rows.forEach(r => { if (r.cls === "WRONG" && isDFC(r)) r.cls = "DFC"; });
   DAY = d; SEL = null; PAT = null;
   const u = new URL(location.href); u.searchParams.set("date", date); history.replaceState(null, "", u);
   document.getElementById("asof").innerHTML = `Interchange of <b>${dLong(d.ic_date)}</b> &middot; ${d.rows.length} crossings`;
@@ -300,10 +297,9 @@ function renderKpis(rows) {
       <div class="knums">
         <div class="kn bad"><div class="l">${ICON.WRONG}Wrong routed</div><div class="v">${c.WRONG}</div><div class="s">${pct(c.WRONG, j)}% of judged trains</div></div>
         <div class="kn good"><div class="l">${ICON.RIGHT}Right routed</div><div class="v">${c.RIGHT}</div><div class="s">${pct(c.RIGHT, j)}% of judged trains</div></div>
-        <div class="kn dfc sm"><div class="l">${ICON.DFC}Via DFC</div><div class="v">${c.DFC}</div><div class="s">not in RBS</div></div>
         <div class="kn sm"><div class="l">${ICON.NA}Not checked</div><div class="v">${c.NA}</div><div class="s">code / path n.a.</div></div>
       </div>
-      <div class="tall" role="img" aria-label="${side}: right ${c.RIGHT}, wrong ${c.WRONG}, DFC ${c.DFC}, not checked ${c.NA}">${c.tot ? segs(c, true) : ""}</div></div>`;
+      <div class="tall" role="img" aria-label="${side}: right ${c.RIGHT}, wrong ${c.WRONG}, not checked ${c.NA}">${c.tot ? segs(c, true) : ""}</div></div>`;
   }).join("");
 }
 
