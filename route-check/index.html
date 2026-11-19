@@ -7,85 +7,126 @@
 <title>Interchange Route Check (MA4 vs RBS) | Delhi Division</title>
 <style>
   :root {
-    --page: linear-gradient(160deg, #e8eef6 0%, #dde6f1 55%, #e9eef5 100%);
-    --header: linear-gradient(100deg, #0d2747 0%, #164277 100%);
-    --accent: #1f6fd1; --card: #ffffff; --card-head: #f5f8fc;
-    --ink: #0e1726; --ink-2: #44526a; --muted: #75839a; --border: #d6dfeb; --grid: #e9eef4;
-    --shadow: 0 1px 2px rgba(16,39,71,.06), 0 6px 18px rgba(16,39,71,.07);
-    --ok: #0a7a34; --ok-bg: #e3f4e9; --bad: #c62f2f; --bad-bg: #fde8e8; --na: #5b6475; --na-bg: #eef0f4;
+    --page: #eef2f8; --header: linear-gradient(100deg, #0b2142 0%, #12396c 60%, #1a4f8f 100%);
+    --accent: #1f6fd1; --card: #ffffff; --card-head: #f6f8fc;
+    --ink: #0e1726; --ink-2: #44526a; --muted: #75839a; --border: #dfe6f0; --grid: #edf1f6;
+    --shadow: 0 1px 2px rgba(16,39,71,.05), 0 8px 24px rgba(16,39,71,.07);
+    --good: #0ca30c; --good-ink: #006300; --good-bg: #e6f6e6;
+    --crit: #d03b3b; --crit-ink: #a52626; --crit-bg: #fdeaea; --crit-2: #e98a8a;
+    --serious: #ec835a; --serious-bg: #fdf0e9; --warn: #fab219;
+    --dfc: #7a5cc0; --dfc-bg: #f1ecfb; --na: #9aa3b2; --na-bg: #f0f2f6;
     --dli: #1650a0; --dli-bg: #e3efff;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; color: var(--ink);
-         background: var(--page); min-height: 100vh; }
-  header { background: var(--header); color: #fff; padding: 16px 22px; }
-  header h1 { margin: 0; font-size: 19px; letter-spacing: .4px; }
-  header .sub { color: #b9cbe3; font-size: 12.5px; margin-top: 2px; }
-  main { max-width: 1380px; margin: 0 auto; padding: 16px; }
-  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
-  .bar label { font-size: 13px; color: var(--ink-2); display: inline-flex; gap: 6px; align-items: center; }
-  select, .search { font: inherit; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--ink); }
-  .search { display: flex; align-items: center; gap: 6px; color: var(--muted); }
-  .search input { border: 0; outline: 0; font: inherit; width: 170px; background: transparent; color: var(--ink); }
-  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--card); }
-  .seg button { font: inherit; font-size: 13px; border: 0; background: transparent; padding: 6px 12px; cursor: pointer; color: var(--ink-2); }
+  body { margin: 0; font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; color: var(--ink); background: var(--page); }
+  header { background: var(--header); color: #fff; }
+  .hwrap { max-width: 1400px; margin: 0 auto; padding: 18px 20px 16px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap; }
+  .brand { display: flex; gap: 12px; align-items: center; }
+  .logo { width: 42px; height: 42px; border-radius: 10px; background: rgba(255,255,255,.12); display: grid; place-items: center; }
+  header h1 { margin: 0; font-size: 19px; letter-spacing: .3px; }
+  header .sub { color: #b9cbe3; font-size: 12.5px; margin-top: 1px; }
+  .hctl { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .hctl label { font-size: 12px; color: #b9cbe3; display: flex; flex-direction: column; gap: 3px; }
+  .hctl select { font: inherit; font-size: 13.5px; font-weight: 600; color: #0b2142; background: #fff; border: 0; border-radius: 8px; padding: 7px 10px; min-width: 230px; }
+  main { max-width: 1400px; margin: 0 auto; padding: 18px 20px 10px; }
+  .toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: var(--card); box-shadow: var(--shadow); }
+  .seg button { font: inherit; font-size: 13px; border: 0; background: transparent; padding: 7px 14px; cursor: pointer; color: var(--ink-2); }
   .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
-  .asof { color: var(--ink-2); font-size: 13px; margin-left: auto; }
-
-  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
-  .kgrp { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; }
-  .kgrp h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: #0d2747; }
-  .kgrp h3 .nm { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
-  .krow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-  .kt.dfc .lab { color: #6b4aa0; }
-  .v.DFC { background: #efe9fb; color: #5b3d94; } .meter i.d { background: #9b7fd1; }
-  .pat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; }
-  .pat table tbody tr.on td { background: #fff1f1; font-weight: 600; }
-  .pat .hint { font-size: 12px; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--grid); }
-  .pat .clr { font: inherit; font-size: 12px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 6px; padding: 2px 9px; cursor: pointer; margin-left: 8px; }
-  .kt { border-radius: 8px; padding: 10px 12px; border: 1px solid var(--grid); background: var(--card-head); }
-  .kt .lab { font-size: 12px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
-  .kt .val { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: var(--ink); }
-  .kt .pct { font-size: 12px; color: var(--muted); }
-  .kt.ok { background: var(--ok-bg); border-color: #bfe3cc; } .kt.ok .lab { color: var(--ok); }
-  .kt.bad { background: var(--bad-bg); border-color: #f3c2c2; } .kt.bad .lab { color: var(--bad); }
-  .kt.na .lab { color: var(--na); }
+  .search { display: flex; align-items: center; gap: 6px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 7px 11px; box-shadow: var(--shadow); }
+  .search input { border: 0; outline: 0; font: inherit; width: 180px; background: transparent; color: var(--ink); }
+  .asof { margin-left: auto; color: var(--ink-2); font-size: 13px; }
   .ico { width: 15px; height: 15px; flex: none; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
+  .ch { display: flex; align-items: baseline; gap: 10px; padding: 14px 18px 0; }
+  .ch h2 { margin: 0; font-size: 14px; letter-spacing: .4px; text-transform: uppercase; color: #0b2142; }
+  .ch .nm { color: var(--muted); font-size: 12.5px; }
 
-  .sec-h { font-size: 15px; margin: 4px 2px 8px; color: #0d2747; letter-spacing: .3px; display: flex; gap: 10px; align-items: baseline; }
-  .sec-h .nm { font-weight: 500; color: var(--muted); font-size: 12.5px; }
-  .ic { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); margin-bottom: 10px; overflow: hidden; }
-  .ic > button.hd { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid;
-                    grid-template-columns: 18px 170px 1fr 1fr; gap: 12px; align-items: center; padding: 11px 14px; }
-  .ic > button.hd:hover { background: #f7faff; }
-  .ic > button.hd:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
-  .ic .car { transition: transform .15s; color: var(--muted); }
-  .ic.open .car { transform: rotate(90deg); }
-  .ic .nmx { font-weight: 700; font-size: 15px; }
-  .ic .nmx small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
-  .sidebar { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
-  .sidebar .sl { min-width: 64px; color: var(--muted); }
-  .meter { flex: 1; max-width: 260px; height: 10px; border-radius: 5px; background: var(--grid); display: flex; overflow: hidden; gap: 2px; }
-  .meter i { display: block; height: 100%; }
-  .meter i.r { background: #2f9e5b; border-radius: 5px 0 0 5px; } .meter i.w { background: #d64545; } .meter i.n { background: #b8c0cc; }
-  .cnt b.w { color: var(--bad); } .cnt b.r { color: var(--ok); }
-  .body { display: none; border-top: 1px solid var(--grid); padding: 6px 14px 12px; }
-  .ic.open .body { display: block; }
-  .body h4 { margin: 10px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
+  /* KPI */
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .kside { padding-bottom: 16px; }
+  .kside .ch h2 span { display: inline-block; font-size: 11px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
+  .knums { display: grid; grid-template-columns: 1.15fr 1.15fr .9fr .9fr; gap: 12px; padding: 12px 18px 12px; }
+  .kn { border-radius: 10px; padding: 10px 12px; background: var(--card-head); }
+  .kn .l { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; color: var(--ink-2); }
+  .kn .v { font-size: 34px; font-weight: 700; line-height: 1.1; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .kn .s { font-size: 12px; color: var(--muted); }
+  .kn.good { background: var(--good-bg); } .kn.good .l { color: var(--good-ink); }
+  .kn.bad { background: var(--crit-bg); } .kn.bad .l { color: var(--crit-ink); } .kn.bad .v { color: var(--crit-ink); }
+  .kn.dfc .l { color: var(--dfc); } .kn.sm .v { font-size: 26px; }
+  .tall { margin: 0 18px; height: 26px; display: flex; gap: 2px; border-radius: 6px; overflow: hidden; background: var(--grid); }
+  .tall i { display: flex; align-items: center; padding: 0 8px; font-style: normal; font-size: 11.5px; font-weight: 700; color: #fff; white-space: nowrap; min-width: 0; }
+  .tall i:first-child { border-radius: 6px 0 0 6px; } .tall i:last-child { border-radius: 0 6px 6px 0; }
+  .tall .g { background: var(--good); } .tall .w { background: var(--crit); } .tall .d { background: var(--dfc); } .tall .n { background: var(--na); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--ink-2); padding: 8px 18px 0; }
+  .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  /* chart */
+  .chart { margin-bottom: 16px; }
+  .chart .body { padding: 8px 18px 14px; position: relative; }
+  .bars { width: 100%; }
+  .bars text { font: 12px "Segoe UI", system-ui, sans-serif; fill: var(--ink-2); }
+  .bars .lbl { fill: var(--ink); font-weight: 600; } .bars .val { fill: var(--ink); font-weight: 700; }
+  .bars .hit { fill: transparent; cursor: pointer; } .bars .row:hover .hit { fill: rgba(31,111,209,.06); }
+  .bars .row.sel .hit { fill: rgba(31,111,209,.10); }
+  .bars .gl { stroke: var(--grid); } .bars .base { stroke: #c9d2df; }
+  #tip { position: absolute; pointer-events: none; background: #0b2142; color: #fff; font-size: 12px; border-radius: 8px; padding: 8px 10px;
+         box-shadow: 0 6px 18px rgba(0,0,0,.2); opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 5; }
+  #tip b { font-size: 13px; } #tip .r { display: flex; gap: 8px; align-items: center; } #tip i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+
+  /* I/C tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; padding: 14px 18px 18px; }
+  .tile { all: unset; box-sizing: border-box; cursor: pointer; position: relative; border-radius: 12px; padding: 14px 14px 12px; background: #fff;
+          border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(16,39,71,.05); transition: transform .12s, box-shadow .12s; overflow: hidden; }
+  .tile:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(16,39,71,.12); }
+  .tile:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .tile::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--sev, var(--good)); }
+  .tile.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent), 0 10px 22px rgba(16,39,71,.12); }
+  .tile .top { display: flex; align-items: flex-start; gap: 8px; }
+  .tile .nmx { font-weight: 800; font-size: 16px; letter-spacing: .3px; }
+  .tile .stn { font-size: 11.5px; color: var(--muted); }
+  .tile .sev { margin-left: auto; font-size: 10.5px; font-weight: 700; border-radius: 20px; padding: 2px 8px; display: inline-flex; gap: 4px; align-items: center; white-space: nowrap; }
+  .sev.hi { background: var(--crit-bg); color: var(--crit-ink); } .sev.md { background: var(--serious-bg); color: #9a4718; } .sev.lo { background: var(--good-bg); color: var(--good-ink); }
+  .tile .mid { display: flex; align-items: flex-end; gap: 14px; margin: 10px 0 8px; }
+  .tile .big { font-size: 34px; font-weight: 800; line-height: 1; color: var(--crit-ink); font-variant-numeric: tabular-nums; }
+  .tile .big small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 3px; }
+  .tile .ok { font-size: 20px; font-weight: 700; color: var(--good-ink); line-height: 1; } .tile .ok small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 3px; }
+  .tile .rate { margin-left: auto; text-align: right; font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1; }
+  .tile .rate small { display: block; font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 3px; }
+  .srow { display: grid; grid-template-columns: 58px 1fr 54px; gap: 8px; align-items: center; font-size: 11.5px; color: var(--ink-2); margin-top: 5px; }
+  .srow .tr { height: 8px; border-radius: 4px; background: var(--grid); display: flex; gap: 2px; overflow: hidden; }
+  .srow .tr i { display: block; height: 100%; } .srow .tr .g { background: var(--good); } .srow .tr .w { background: var(--crit); } .srow .tr .d { background: var(--dfc); } .srow .tr .n { background: var(--na); }
+  .srow .c { text-align: right; font-variant-numeric: tabular-nums; } .srow .c b { color: var(--crit-ink); }
+
+  /* detail panel */
+  .detail { margin: 0 18px 18px; border: 1px solid var(--border); border-radius: 12px; background: #fbfcfe; display: none; }
+  .detail.on { display: block; }
+  .detail .dh { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--grid); }
+  .detail .dh h3 { margin: 0; font-size: 16px; } .detail .dh .nm { color: var(--muted); font-size: 12.5px; }
+  .detail .dh button { margin-left: auto; font: inherit; font-size: 12.5px; border: 1px solid var(--border); background: #fff; border-radius: 7px; padding: 4px 10px; cursor: pointer; }
+  .detail .dsec { padding: 4px 16px 12px; }
+  .detail h4 { margin: 10px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
   table { border-collapse: collapse; width: 100%; }
-  th, td { padding: 7px 9px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; font-size: 13px; }
-  thead th { background: var(--card-head); font-size: 11.5px; color: var(--ink-2); font-weight: 600; white-space: nowrap; }
-  tbody tr { cursor: pointer; } tbody tr:hover td { background: #f4f8ff; }
+  th, td { padding: 8px 9px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; font-size: 13px; }
+  thead th { background: var(--card-head); font-size: 11.5px; color: var(--ink-2); font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+  tbody tr { cursor: pointer; } tbody tr:hover td { background: #f1f6ff; }
   tbody tr:focus-visible td { outline: 2px solid var(--accent); outline-offset: -2px; }
-  td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .od { font-weight: 700; } .od small { font-weight: 500; color: var(--muted); }
-  .v { display: inline-flex; gap: 5px; align-items: center; border-radius: 4px; padding: 1px 7px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-  .v.RIGHT { background: var(--ok-bg); color: var(--ok); } .v.WRONG { background: var(--bad-bg); color: var(--bad); }
-  .v.NA { background: var(--na-bg); color: var(--na); }
-  .stn { font-weight: 700; } .muted { color: var(--muted); } .empty { padding: 18px; text-align: center; color: var(--muted); }
-  .note { font-size: 12px; color: var(--muted); margin: 6px 2px 0; }
-  footer { color: var(--muted); font-size: 11.5px; padding: 18px 4px; line-height: 1.6; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .od { font-weight: 700; } .stnc { font-weight: 700; } .muted { color: var(--muted); }
+  .v { display: inline-flex; gap: 5px; align-items: center; border-radius: 5px; padding: 2px 8px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .v.RIGHT { background: var(--good-bg); color: var(--good-ink); } .v.WRONG { background: var(--crit-bg); color: var(--crit-ink); }
+  .v.DFC { background: var(--dfc-bg); color: #5b3d94; } .v.NA { background: var(--na-bg); color: #5b6475; }
+  .empty { padding: 18px; text-align: center; color: var(--muted); }
+  .tbl { overflow-x: auto; }
 
+  /* patterns */
+  .pat { margin-top: 16px; }
+  .pat .tbl { padding: 8px 18px 4px; }
+  .pat tbody tr.on td { background: #fff1f1; }
+  .pat .bar { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--crit); vertical-align: middle; margin-right: 6px; }
+  .pat .hint { font-size: 12px; color: var(--muted); padding: 8px 18px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn { font: inherit; font-size: 12.5px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 7px; padding: 3px 10px; cursor: pointer; }
+  footer { color: var(--muted); font-size: 11.5px; padding: 16px 2px 22px; line-height: 1.6; }
   #box { display: none; position: fixed; inset: 0; background: rgba(10,20,40,.45); z-index: 50; align-items: center; justify-content: center; padding: 14px; }
   #box.on { display: flex; }
   #box .in { background: #fff; border-radius: 12px; max-width: 980px; width: 100%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
@@ -113,49 +154,62 @@
   .extra { padding: 0 18px 16px; font-size: 12.5px; color: var(--ink-2); }
   .extra div { margin-top: 4px; }
 
-  @media (max-width: 860px) {
-    .kpis { grid-template-columns: 1fr; } .krow { grid-template-columns: repeat(2, 1fr); }
-    .tbl { overflow-x: auto; }
-    .ic > button.hd { grid-template-columns: 18px 1fr; } .ic > button.hd .sidebar { grid-column: 2; }
-    .cmp { grid-template-columns: 1fr; } .asof { margin-left: 0; }
-    thead { display: none; } table, tbody, tr, td { display: block; width: 100%; }
-    tr { border-bottom: 6px solid var(--grid); padding: 4px 0; } td { border: 0; padding: 3px 10px; display: flex; gap: 10px; }
-    td::before { content: attr(data-l); min-width: 92px; color: var(--muted); font-size: 12px; }
+  @media (max-width: 900px) {
+    .kpis { grid-template-columns: 1fr; } .knums { grid-template-columns: 1fr 1fr; }
+    .hctl { margin-left: 0; width: 100%; } .hctl label, .hctl select { width: 100%; } .asof { margin-left: 0; width: 100%; }
+    .cmp { grid-template-columns: 1fr; }
+    .detail thead { display: none; } .detail table, .detail tbody, .detail tr, .detail td { display: block; width: 100%; }
+    .detail tr { border-bottom: 6px solid var(--grid); padding: 4px 0; } .detail td { border: 0; padding: 3px 10px; }
   }
 </style>
 </head>
 <body>
-<header>
-  <h1>INTERCHANGE ROUTE CHECK &mdash; ACTUAL I/C vs RBS SHORTEST PATH</h1>
-  <div class="sub">Delhi Division, Northern Railway &middot; yesterday's actual interchange (FOIS MA4) &middot; correct entry / exit point from RBS ShortPath</div>
-</header>
+<header><div class="hwrap">
+  <div class="brand">
+    <div class="logo"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M4 17h16M6 17l2-11h8l2 11M9 6l-1 11M15 6l1 11M8 21l1.5-4M16 21l-1.5-4"/></svg></div>
+    <div><h1>INTERCHANGE ROUTE CHECK</h1>
+      <div class="sub">Delhi Division, Northern Railway &middot; actual I/C (FOIS MA4) vs RBS shortest path</div></div>
+  </div>
+  <div class="hctl"><label>Interchange date<select id="day" aria-label="Interchange date"></select></label></div>
+</div></header>
 <main>
-  <div class="bar">
-    <label>Interchange date <select id="day" aria-label="Interchange date"></select></label>
-    <span class="seg" role="group" aria-label="Show">
-      <button type="button" data-f="WRONG" class="on">Wrong routed</button>
-      <button type="button" data-f="ALL">All trains</button>
+  <div class="toolbar">
+    <span class="seg" role="group" aria-label="Show trains">
+      <button type="button" data-f="WRONG" class="on">Wrong routed</button><button type="button" data-f="ALL">All trains</button>
     </span>
     <label class="search" title="Search station code or stock">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      <input id="q" placeholder="From / To / stock" aria-label="Search station code or stock">
+      <input id="q" placeholder="From / To / stock / I/C" aria-label="Search">
     </label>
     <span class="asof" id="asof">Loading&hellip;</span>
   </div>
 
-  <section class="kpis" id="kpis" aria-label="Totals"></section>
-  <div class="sec-h">WRONG ROUTED &mdash; BY PATTERN <span class="nm">actual I/C used vs I/C on the RBS shortest path; click a row to see its trains</span></div>
-  <div class="pat" id="pat"></div>
-  <div class="sec-h">I/C POINT-WISE <span class="nm">click an I/C point, then a train for its route</span></div>
-  <div id="list"><div class="ic"><div class="empty">Loading&hellip;</div></div></div>
+  <section class="kpis" id="kpis" aria-label="Receipt and despatch totals"></section>
+
+  <section class="card chart" aria-label="Most wrong-routed I/C points">
+    <div class="ch"><h2>Most wrong-routed I/C points</h2><span class="nm">wrong-routed trains per I/C point &middot; click a bar to open it</span></div>
+    <div class="legend"><span><b style="background:var(--crit)"></b>Receipt</span><span><b style="background:var(--crit-2)"></b>Despatch</span></div>
+    <div class="body" id="chartbox"><svg class="bars" id="bars" role="img" aria-label="Wrong-routed trains by I/C point"></svg><div id="tip"></div></div>
+  </section>
+
+  <section class="card" aria-label="I/C points">
+    <div class="ch"><h2>I/C point-wise</h2><span class="nm">click a tile for its trains, then a train for its route</span></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="detail" id="detail"></div>
+  </section>
+
+  <section class="card pat" aria-label="Wrong routed by pattern">
+    <div class="ch"><h2>Wrong routed &mdash; by pattern</h2><span class="nm">actual I/C used vs I/C on the RBS shortest path &middot; click a row for its trains</span></div>
+    <div id="pat"></div>
+  </section>
 
   <footer>
     <b>Right routed</b>: the train entered (receipt / taken over) or left (despatch / handed over) Delhi Division at the I/C point
     where the RBS shortest path crosses the DLI boundary (or within 5 stations of it).
     <b>Wrong routed</b>: the RBS path crosses DLI at another I/C point, or does not touch DLI at all.
-    <b>Via DFC</b>: taken over from / handed over to WDFC or EDFC - RBS ShortPath does not cover the DFC, so these are not judged.
-    <b>Not checked</b>: RBS did not accept a station code (sidings) or gave no path.<br>
-    RBS ShortPath gives the shortest chargeable route; a train diverted on authority (block, DFC, rationalised route) also shows as
+    <b>Via DFC</b>: taken over from / handed over to WDFC or EDFC &ndash; RBS ShortPath does not cover the DFC, so not judged.
+    <b>Not checked</b>: RBS did not accept a station code (sidings) or gave no path. Tile level: High &ge; 40 % wrong, Medium 20&ndash;40 %, Low &lt; 20 % of judged trains.<br>
+    RBS ShortPath gives the shortest chargeable route; a train diverted on authority (block, rationalised route, line capacity) also shows as
     differing from it. Source: FOIS MA4 train-wise interchange (previous day) and RBS ShortPath (rbs.indianrail.gov.in).
   </footer>
 </main>
@@ -163,7 +217,6 @@
 <div id="box" role="dialog" aria-modal="true" aria-labelledby="bxt"><div class="in" id="bxin"></div></div>
 
 <script>
-// Goods Apps Script web app (foisanalyst) - public feed, leaves out loco numbers
 const FEED = "https://script.google.com/macros/s/AKfycbzjUFJRcfvxFsRCadFd44LK7GbFtlbClQnUKtcAcVIYHYF9gy4ONWC0MH-H4ooVBl0I/exec";
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -171,16 +224,16 @@ const dLong = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ""); return 
 const ICON = {
   RIGHT: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   WRONG: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>',
-  NA: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>'
+  DFC: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 9h16M4 15h16M8 5v14M16 5v14"/></svg>',
+  NA: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>',
+  WARN: '<svg class="ico" style="width:12px;height:12px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>'
 };
 const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", DFC: "Via DFC", NA: "Not checked" };
-ICON.DFC = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 9h16M4 15h16M8 5v14M16 5v14"/></svg>';
+const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
 // RBS ShortPath has no DFC: a crossing at a WDFC / EDFC I/C point is shown apart, not as wrong routed
 const isDFC = r => /^(WDFC|EDFC)-/.test(r.ic_point || "");
 const patKey = r => `${r.side}|${r.ic_point}|${r.verdict === "NOT VIA DLI" ? "NOT VIA DLI" : (r.rbs_ic || r.rbs_boundary || "?")}`;
-let PAT = null, PAT_ALL = false;
-const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
-let DATES = [], DAY = null, FILTER = "WRONG", Q = "", OPEN = new Set();
+let DATES = [], DAY = null, FILTER = "WRONG", Q = "", SEL = null, PAT = null, PAT_ALL = false;
 
 async function getJSON(params) {
   const r = await fetch(FEED + (FEED.includes("?") ? "&" : "?") + params, { cache: "no-store" });
@@ -188,14 +241,13 @@ async function getJSON(params) {
 }
 
 async function init() {
-  if (FEED.startsWith("__")) { fail("Feed not set up yet."); return; }
   try {
     const d = await getJSON("feed=route_dates");
     if (!d.ok || !d.dates.length) { fail("No route check published yet."); return; }
     DATES = d.dates;
     const want = new URLSearchParams(location.search).get("date");
     const sel = document.getElementById("day");
-    sel.innerHTML = DATES.map(x => `<option value="${esc(x.date)}">${dLong(x.ic_date || x.date)}  (MA4 of ${dLong(x.date)})</option>`).join("");
+    sel.innerHTML = DATES.map(x => `<option value="${esc(x.date)}">${dLong(x.ic_date || x.date)}  &middot;  MA4 of ${dLong(x.date)}</option>`).join("");
     if (want && DATES.some(x => x.date === want)) sel.value = want;
     sel.onchange = () => load(sel.value);
     await load(sel.value);
@@ -207,7 +259,7 @@ async function load(date) {
   const d = await getJSON("feed=route&date=" + encodeURIComponent(date));
   if (!d.ok) { fail(d.error || "No data for this day."); return; }
   d.rows.forEach(r => { if (r.cls === "WRONG" && isDFC(r)) r.cls = "DFC"; });
-  DAY = d; OPEN.clear(); PAT = null;
+  DAY = d; SEL = null; PAT = null;
   const u = new URL(location.href); u.searchParams.set("date", date); history.replaceState(null, "", u);
   document.getElementById("asof").innerHTML = `Interchange of <b>${dLong(d.ic_date)}</b> &middot; ${d.rows.length} crossings`;
   render();
@@ -215,98 +267,147 @@ async function load(date) {
 
 function fail(msg) {
   document.getElementById("asof").textContent = "";
-  document.getElementById("kpis").innerHTML = "";
-  document.getElementById("list").innerHTML = `<div class="ic"><div class="empty">${esc(msg)}</div></div>`;
+  ["kpis", "tiles", "pat"].forEach(id => document.getElementById(id).innerHTML = "");
+  document.getElementById("bars").innerHTML = "";
+  document.getElementById("tiles").innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(msg)}</div>`;
 }
 
-const match = r => (!PAT || (r.cls === "WRONG" && patKey(r) === PAT)) &&
-  (!Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q)));
+const qmatch = r => !Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q));
 const count = (rows, side) => {
-  const s = rows.filter(r => r.side === side);
-  return { tot: s.length, RIGHT: s.filter(r => r.cls === "RIGHT").length, WRONG: s.filter(r => r.cls === "WRONG").length,
-           DFC: s.filter(r => r.cls === "DFC").length, NA: s.filter(r => r.cls === "NA").length };
+  const s = side ? rows.filter(r => r.side === side) : rows;
+  const c = { tot: s.length, RIGHT: 0, WRONG: 0, DFC: 0, NA: 0 };
+  s.forEach(r => c[r.cls] = (c[r.cls] || 0) + 1);
+  return c;
 };
-const pct = (n, t) => t ? Math.round(n * 100 / t) + "%" : "–";
+const pct = (n, t) => t ? Math.round(n * 100 / t) : 0;
+const sevOf = c => { const j = c.RIGHT + c.WRONG, p = j ? c.WRONG * 100 / j : 0;
+  return p >= 40 ? ["hi", "High", "var(--crit)"] : p >= 20 ? ["md", "Medium", "var(--serious)"] : ["lo", "Low", "var(--good)"]; };
 
 function render() {
-  const rows = DAY.rows.filter(match);
-  // KPI tiles
-  document.getElementById("kpis").innerHTML = ["RECEIPT", "DESPATCH"].map(side => {
-    const c = count(rows, side), chk = c.RIGHT + c.WRONG;
-    return `<div class="kgrp"><h3>${side === "RECEIPT" ? "Receipt I/C" : "Despatch I/C"}<span class="nm">${side === "RECEIPT" ? "taken over by DLI" : "handed over by DLI"}</span></h3>
-      <div class="krow">
-        <div class="kt"><div class="lab">Total trains</div><div class="val">${c.tot}</div><div class="pct">crossings</div></div>
-        <div class="kt ok"><div class="lab">${ICON.RIGHT}Right routed</div><div class="val">${c.RIGHT}</div><div class="pct">${pct(c.RIGHT, chk)} of checked</div></div>
-        <div class="kt bad"><div class="lab">${ICON.WRONG}Wrong routed</div><div class="val">${c.WRONG}</div><div class="pct">${pct(c.WRONG, chk)} of checked</div></div>
-        <div class="kt dfc"><div class="lab">${ICON.DFC}Via DFC</div><div class="val">${c.DFC}</div><div class="pct">DFC not in RBS</div></div>
-        <div class="kt na"><div class="lab">${ICON.NA}Not checked</div><div class="val">${c.NA}</div><div class="pct">RBS code / path n.a.</div></div>
-      </div></div>`;
-  }).join("");
+  const rows = DAY.rows.filter(qmatch);
+  renderKpis(rows); renderChart(rows); renderTiles(rows); renderDetail(rows); renderPatterns(rows);
+}
 
-  renderPatterns();
-  // I/C point list - wrong-heavy points first
-  const pts = {};
-  rows.forEach(r => (pts[r.ic_point] ??= []).push(r));
-  const keys = Object.keys(pts).sort((a, b) => {
-    const wa = pts[a].filter(r => r.cls === "WRONG").length, wb = pts[b].filter(r => r.cls === "WRONG").length;
-    return wb - wa || a.localeCompare(b);
-  });
-  const list = document.getElementById("list");
-  if (!keys.length) { list.innerHTML = `<div class="ic"><div class="empty">Nothing matches the search.</div></div>`; return; }
-  list.innerHTML = keys.map(k => {
-    const rs = pts[k], stn = rs[0].ic_stn;
-    const side = s => {
-      const c = count(rs, s);
-      if (!c.tot) return `<div class="sidebar"><span class="sl">${s === "RECEIPT" ? "Receipt" : "Despatch"}</span><span class="muted">no trains</span></div>`;
-      const w = x => (x * 100 / c.tot).toFixed(1) + "%";
-      return `<div class="sidebar"><span class="sl">${s === "RECEIPT" ? "Receipt" : "Despatch"}</span>
-        <span class="meter" aria-hidden="true">${c.RIGHT ? `<i class="r" style="width:${w(c.RIGHT)}"></i>` : ""}${c.WRONG ? `<i class="w" style="width:${w(c.WRONG)}"></i>` : ""}${c.DFC ? `<i class="d" style="width:${w(c.DFC)}"></i>` : ""}${c.NA ? `<i class="n" style="width:${w(c.NA)}"></i>` : ""}</span>
-        <span class="cnt"><b class="w">${c.WRONG}</b> wrong / <b class="r">${c.RIGHT}</b> right${c.DFC ? ` / ${c.DFC} DFC` : ""}${c.NA ? ` / ${c.NA} n.c.` : ""} of ${c.tot}</span></div>`;
-    };
-    const tbl = s => {
-      const sel = rs.filter(r => r.side === s && (FILTER === "ALL" || PAT || r.cls === "WRONG"))
-                    .sort((a, b) => (a.cls === "WRONG" ? 0 : 1) - (b.cls === "WRONG" ? 0 : 1) || String(a.time).localeCompare(String(b.time)));
-      if (!sel.length) return `<h4>${SIDE[s]}</h4><div class="empty" style="padding:8px">${FILTER === "WRONG" ? "No wrong-routed train." : "No train."}</div>`;
-      return `<h4>${SIDE[s]}</h4><table><thead><tr><th>Time</th><th>Divn</th><th>From &rarr; To</th><th>L/E</th><th>Stock</th><th class="num">Units</th>
-        <th>${s === "RECEIPT" ? "Actually entered at" : "Actually left at"}</th><th>As per RBS</th><th>Status</th></tr></thead><tbody>` +
-        sel.map(r => `<tr tabindex="0" data-i="${DAY.rows.indexOf(r)}">
-          <td data-l="Time"><b>${esc(r.time)}</b></td><td data-l="Divn">${esc(r.divn)}</td>
-          <td data-l="From → To" class="od">${esc(r.frm)} &rarr; ${esc(r.to)}</td><td data-l="L/E">${esc(r.le)}</td>
-          <td data-l="Stock">${esc(r.stock)}</td><td data-l="Units" class="num">${esc(r.units)}</td>
-          <td data-l="Actual"><span class="stn">${esc(r.ic_stn)}</span> <small class="muted">${esc(r.ic_point)}</small></td>
-          <td data-l="As per RBS">${expShort(r)}</td>
-          <td data-l="Status"><span class="v ${esc(r.cls)}">${ICON[r.cls] || ""}${VLAB[r.cls] || esc(r.verdict)}</span></td></tr>`).join("") +
-        `</tbody></table>`;
-    };
-    return `<div class="ic${OPEN.has(k) ? " open" : ""}" data-k="${esc(k)}">
-      <button type="button" class="hd" aria-expanded="${OPEN.has(k)}">
-        <svg class="ico car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>
-        <span class="nmx">${esc(k)}<small>I/C station ${esc(stn)}</small></span>${side("RECEIPT")}${side("DESPATCH")}
-      </button><div class="body">${tbl("RECEIPT")}${tbl("DESPATCH")}</div></div>`;
+function segs(c, cls) {
+  const parts = [["g", c.RIGHT, "Right"], ["w", c.WRONG, "Wrong"], ["d", c.DFC, "DFC"], ["n", c.NA, "Not checked"]].filter(p => p[1]);
+  return parts.map(([k, v, n]) => `<i class="${k}" style="width:${(v * 100 / c.tot).toFixed(2)}%" title="${n}: ${v} (${pct(v, c.tot)}%)">${cls && v * 100 / c.tot >= 9 ? pct(v, c.tot) + "%" : ""}</i>`).join("");
+}
+
+function renderKpis(rows) {
+  document.getElementById("kpis").innerHTML = ["RECEIPT", "DESPATCH"].map(side => {
+    const c = count(rows, side), j = c.RIGHT + c.WRONG;
+    return `<div class="card kside"><div class="ch"><h2>${side === "RECEIPT" ? "Receipt I/C" : "Despatch I/C"}<span>${side === "RECEIPT" ? "taken over by DLI" : "handed over by DLI"} &middot; ${c.tot} trains</span></h2></div>
+      <div class="knums">
+        <div class="kn bad"><div class="l">${ICON.WRONG}Wrong routed</div><div class="v">${c.WRONG}</div><div class="s">${pct(c.WRONG, j)}% of judged trains</div></div>
+        <div class="kn good"><div class="l">${ICON.RIGHT}Right routed</div><div class="v">${c.RIGHT}</div><div class="s">${pct(c.RIGHT, j)}% of judged trains</div></div>
+        <div class="kn dfc sm"><div class="l">${ICON.DFC}Via DFC</div><div class="v">${c.DFC}</div><div class="s">not in RBS</div></div>
+        <div class="kn sm"><div class="l">${ICON.NA}Not checked</div><div class="v">${c.NA}</div><div class="s">code / path n.a.</div></div>
+      </div>
+      <div class="tall" role="img" aria-label="${side}: right ${c.RIGHT}, wrong ${c.WRONG}, DFC ${c.DFC}, not checked ${c.NA}">${c.tot ? segs(c, true) : ""}</div></div>`;
   }).join("");
 }
 
-function renderPatterns() {
-  const all = DAY.rows.filter(r => r.cls === "WRONG" && (!Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q))));
+function byIC(rows) {
   const g = {};
-  all.forEach(r => { const k = patKey(r); (g[k] ??= []).push(r); });
-  const keysAll = Object.keys(g).sort((a, b) => g[b].length - g[a].length);
-  const keys = PAT_ALL ? keysAll : keysAll.slice(0, 12);
+  rows.forEach(r => (g[r.ic_point] ??= []).push(r));
+  return g;
+}
+
+function renderChart(rows) {
+  const g = byIC(rows);
+  const data = Object.keys(g).map(k => ({ k, stn: g[k][0].ic_stn, rw: count(g[k], "RECEIPT").WRONG, dw: count(g[k], "DESPATCH").WRONG, all: count(g[k]) }))
+    .filter(d => d.rw + d.dw > 0).sort((a, b) => (b.rw + b.dw) - (a.rw + a.dw) || a.k.localeCompare(b.k)).slice(0, 12);
+  const svg = document.getElementById("bars");
+  if (!data.length) { svg.setAttribute("height", 40); svg.innerHTML = `<text x="0" y="24">No wrong-routed train.</text>`; return; }
+  const W = Math.max(300, document.getElementById("chartbox").clientWidth - 36), L = W < 520 ? 84 : 112, R = W < 520 ? 92 : 150, rowH = 32, bh = 18;
+  const H = data.length * rowH + 26, max = Math.max(...data.map(d => d.rw + d.dw));
+  const step = max <= 5 ? 1 : max <= 12 ? 2 : max <= 30 ? 5 : 10, top = Math.ceil(max / step) * step;
+  const x = v => L + (W - L - R) * v / top;
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("height", H);
+  let h = "";
+  for (let t = 0; t <= top; t += step) h += `<line class="gl" x1="${x(t)}" x2="${x(t)}" y1="4" y2="${H - 22}"/><text x="${x(t)}" y="${H - 6}" text-anchor="middle">${t}</text>`;
+  data.forEach((d, i) => {
+    const y = 6 + i * rowH, tot = d.rw + d.dw, w1 = x(d.rw) - L, w2 = x(tot) - x(d.rw), j = d.all.RIGHT + d.all.WRONG;
+    const gap = d.rw && d.dw ? 2 : 0, end = L + w1 + w2;
+    // square at the baseline, 4px rounded data-end: clip the stack with one rounded bar
+    h += `<g class="row${SEL === d.k ? " sel" : ""}" data-k="${esc(d.k)}" data-tip="${esc(JSON.stringify({ k: d.k, rw: d.rw, dw: d.dw, j, p: pct(tot, j) }))}">
+      <rect class="hit" x="0" y="${y - 6}" width="${W}" height="${rowH}" rx="6"/>
+      <text class="lbl" x="${L - 10}" y="${y + bh / 2 + 4}" text-anchor="end">${esc(d.k)}</text>
+      <clipPath id="c${i}"><path d="M${L},${y} H${end - 4} a4,4 0 0 1 4,4 V${y + bh - 4} a4,4 0 0 1 -4,4 H${L} Z"/></clipPath>
+      <g clip-path="url(#c${i})">
+        ${d.rw ? `<rect x="${L}" y="${y}" width="${w1}" height="${bh}" fill="var(--crit)"/>` : ""}
+        ${d.dw ? `<rect x="${L + w1 + gap}" y="${y}" width="${Math.max(0, w2 - gap)}" height="${bh}" fill="var(--crit-2)"/>` : ""}
+      </g>
+      <text class="val" x="${end + 8}" y="${y + bh / 2 + 4}">${tot}<tspan class="muted" style="font-weight:500;fill:var(--muted)"> &middot; ${pct(tot, j)}% of judged</tspan></text></g>`;
+  });
+  h += `<line class="base" x1="${L}" x2="${L}" y1="2" y2="${H - 22}"/>`;
+  svg.innerHTML = h;
+}
+
+function renderTiles(rows) {
+  const g = byIC(rows), el = document.getElementById("tiles");
+  const keys = Object.keys(g).sort((a, b) => count(g[b]).WRONG - count(g[a]).WRONG || a.localeCompare(b));
+  if (!keys.length) { el.innerHTML = `<div class="empty" style="grid-column:1/-1">Nothing matches the search.</div>`; return; }
+  el.innerHTML = keys.map(k => {
+    const rs = g[k], c = count(rs), j = c.RIGHT + c.WRONG, [sv, svl, svc] = sevOf(c);
+    const srow = s => { const x = count(rs, s);
+      return `<div class="srow"><span>${s === "RECEIPT" ? "Receipt" : "Despatch"}</span>
+        <span class="tr">${x.tot ? segs(x, false) : ""}</span><span class="c">${x.tot ? `<b>${x.WRONG}</b> / ${x.tot}` : "&ndash;"}</span></div>`; };
+    return `<button type="button" class="tile${SEL === k ? " sel" : ""}" data-k="${esc(k)}" style="--sev:${svc}" aria-pressed="${SEL === k}"
+        aria-label="${esc(k)}: ${c.WRONG} wrong routed, ${c.RIGHT} right routed of ${c.tot}">
+      <div class="top"><div><div class="nmx">${esc(k)}</div><div class="stn">I/C station ${esc(rs[0].ic_stn)}</div></div>
+        <span class="sev ${sv}">${sv === "lo" ? ICON.RIGHT.replace('class="ico"', 'class="ico" style="width:12px;height:12px"') : ICON.WARN}${svl}</span></div>
+      <div class="mid"><div class="big">${c.WRONG}<small>wrong routed</small></div><div class="ok">${c.RIGHT}<small>right</small></div>
+        <div class="rate">${j ? pct(c.WRONG, j) + "%" : "&ndash;"}<small>wrong of judged</small></div></div>
+      ${srow("RECEIPT")}${srow("DESPATCH")}</button>`;
+  }).join("");
+}
+
+function renderDetail(rows) {
+  const el = document.getElementById("detail");
+  if (!SEL) { el.classList.remove("on"); el.innerHTML = ""; return; }
+  const rs = rows.filter(r => r.ic_point === SEL && (!PAT || (r.cls === "WRONG" && patKey(r) === PAT)));
+  const tbl = s => {
+    const sel = rs.filter(r => r.side === s && (FILTER === "ALL" || PAT || r.cls === "WRONG"))
+      .sort((a, b) => (a.cls === "WRONG" ? 0 : 1) - (b.cls === "WRONG" ? 0 : 1) || String(a.time).localeCompare(String(b.time)));
+    if (!sel.length) return `<h4>${SIDE[s]}</h4><div class="empty" style="padding:8px">${FILTER === "WRONG" && !PAT ? "No wrong-routed train." : "No train."}</div>`;
+    return `<h4>${SIDE[s]} &middot; ${sel.length}</h4><div class="tbl"><table><thead><tr><th>Time</th><th>Divn</th><th>From &rarr; To</th><th>L/E</th><th>Stock</th><th class="num">Units</th>
+      <th>${s === "RECEIPT" ? "Actually entered at" : "Actually left at"}</th><th>As per RBS</th><th>Status</th></tr></thead><tbody>` +
+      sel.map(r => `<tr tabindex="0" data-i="${DAY.rows.indexOf(r)}">
+        <td><b>${esc(r.time)}</b></td><td>${esc(r.divn)}</td><td class="od">${esc(r.frm)} &rarr; ${esc(r.to)}</td><td>${esc(r.le)}</td>
+        <td>${esc(r.stock)}</td><td class="num">${esc(r.units)}</td>
+        <td><span class="stnc">${esc(r.ic_stn)}</span> <small class="muted">${esc(r.ic_point)}</small></td><td>${expShort(r)}</td>
+        <td><span class="v ${esc(r.cls)}">${ICON[r.cls] || ""}${VLAB[r.cls] || esc(r.verdict)}</span></td></tr>`).join("") + `</tbody></table></div>`;
+  };
+  el.innerHTML = `<div class="dh"><h3>${esc(SEL)}</h3><span class="nm">${PAT ? "pattern: " + esc(PAT.split("|").slice(1).join(" used, RBS via ")) : FILTER === "WRONG" ? "wrong-routed trains" : "all trains"} &middot; click a train for its route</span>
+    <button type="button" id="dclose">Close</button></div><div class="dsec">${tbl("RECEIPT")}${tbl("DESPATCH")}</div>`;
+  el.classList.add("on");
+}
+
+function renderPatterns(rows) {
+  const all = rows.filter(r => r.cls === "WRONG"), g = {};
+  all.forEach(r => (g[patKey(r)] ??= []).push(r));
+  const keysAll = Object.keys(g).sort((a, b) => g[b].length - g[a].length), keys = PAT_ALL ? keysAll : keysAll.slice(0, 12);
   const el = document.getElementById("pat");
   if (!keys.length) { el.innerHTML = `<div class="empty">No wrong-routed train.</div>`; return; }
+  const mx = g[keysAll[0]].length;
   const top = (rs, f, n) => { const c = {}; rs.forEach(r => { const v = f(r); c[v] = (c[v] || 0) + 1; });
     return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n).map(([v, k]) => `${esc(v)} (${k})`).join(", "); };
   el.innerHTML = `<div class="tbl"><table><thead><tr><th>Side</th><th>Actually used</th><th>RBS shortest path via</th>
-      <th class="num">Trains</th><th>Loaded / Empty</th><th>Main stock</th><th>Main From &rarr; To</th></tr></thead><tbody>` +
+      <th>Trains</th><th>Loaded / Empty</th><th>Main stock</th><th>Main From &rarr; To</th></tr></thead><tbody>` +
     keys.map(k => { const rs = g[k], [side, act, rbs] = k.split("|"), L = rs.filter(r => r.le === "L").length;
       return `<tr tabindex="0" data-p="${esc(k)}" class="${PAT === k ? "on" : ""}">
-        <td data-l="Side">${side === "RECEIPT" ? "Receipt" : "Despatch"}</td><td data-l="Actually used"><b>${esc(act)}</b></td>
-        <td data-l="RBS via"><b>${esc(rbs)}</b></td><td data-l="Trains" class="num"><b>${rs.length}</b></td>
-        <td data-l="L / E">${L} L / ${rs.length - L} E</td><td data-l="Stock">${top(rs, r => r.stock, 3)}</td>
-        <td data-l="From → To">${top(rs, r => r.frm + "→" + r.to, 3)}</td></tr>`; }).join("") +
-    `</tbody></table></div>` +
-    (keysAll.length > 12 ? `<div class="hint"><button type="button" class="clr" id="patmore" style="margin-left:0">${PAT_ALL ? "Show top 12 patterns" : `Show all ${keysAll.length} patterns`}</button></div>` : "") +
-    `<div class="hint">A pattern that is the normal route for these trains (block, rationalised route, line capacity) can be marked as accepted - tell the analyst.${PAT ? `<button type="button" class="clr" data-p="">Show all wrong-routed</button>` : ""}</div>`;
+        <td>${side === "RECEIPT" ? "Receipt" : "Despatch"}</td><td><b>${esc(act)}</b></td><td><b>${esc(rbs)}</b></td>
+        <td style="white-space:nowrap"><span class="bar" style="width:${Math.max(4, rs.length * 90 / mx)}px"></span><b>${rs.length}</b></td>
+        <td>${L} L / ${rs.length - L} E</td><td>${top(rs, r => r.stock, 3)}</td><td>${top(rs, r => r.frm + "→" + r.to, 3)}</td></tr>`; }).join("") +
+    `</tbody></table></div><div class="hint">${keysAll.length > 12 ? `<button type="button" class="btn" id="patmore">${PAT_ALL ? "Show top 12" : `Show all ${keysAll.length} patterns`}</button>` : ""}
+      ${PAT ? `<button type="button" class="btn" data-p="">Clear pattern</button>` : ""}
+      <span>A pattern that is the normal route for these trains (block, rationalised route, line capacity) can be marked as accepted &ndash; tell the analyst.</span></div>`;
+}
+
+function selectIC(k, scroll) {
+  SEL = SEL === k && !PAT ? null : k; render();
+  if (SEL && scroll) document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function expStation(r) {
@@ -379,16 +480,15 @@ function openTrain(i) {
 function closeBox() { document.getElementById("box").classList.remove("on"); }
 
 document.addEventListener("click", e => {
-  const hd = e.target.closest(".ic > button.hd");
-  if (hd) { const k = hd.parentElement.dataset.k; OPEN.has(k) ? OPEN.delete(k) : OPEN.add(k); render(); return; }
+  if (e.target.id === "box") { closeBox(); return; }
+  if (e.target.id === "dclose") { SEL = null; PAT = null; render(); return; }
   if (e.target.id === "patmore") { PAT_ALL = !PAT_ALL; render(); return; }
+  const tile = e.target.closest(".tile"); if (tile) { PAT = null; selectIC(tile.dataset.k, true); return; }
+  const bar = e.target.closest("#bars .row"); if (bar) { PAT = null; selectIC(bar.dataset.k, true); return; }
   const pr = e.target.closest("[data-p]");
-  if (pr) { const k = pr.dataset.p; PAT = (k && PAT !== k) ? k : null;
-    if (PAT) { const ic = PAT.split("|")[1]; OPEN.clear(); OPEN.add(ic); }
-    render(); if (PAT) document.querySelector(`.ic[data-k="${CSS.escape(PAT.split("|")[1])}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-    return; }
+  if (pr) { const k = pr.dataset.p; PAT = (k && PAT !== k) ? k : null; SEL = PAT ? PAT.split("|")[1] : null; render();
+    if (SEL) document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" }); return; }
   const tr = e.target.closest("tbody tr[data-i]"); if (tr) { openTrain(+tr.dataset.i); return; }
-  if (e.target.id === "box") closeBox();
   const b = e.target.closest(".seg button");
   if (b) { FILTER = b.dataset.f; document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x === b)); render(); }
 });
@@ -399,6 +499,20 @@ document.addEventListener("keydown", e => {
     const pr = e.target.closest("tr[data-p]"); if (pr) pr.click();
   }
 });
+// chart tooltip
+const tip = document.getElementById("tip"), box = document.getElementById("chartbox");
+box.addEventListener("mousemove", e => {
+  const g = e.target.closest("#bars .row");
+  if (!g) { tip.style.opacity = 0; return; }
+  const d = JSON.parse(g.dataset.tip), b = box.getBoundingClientRect();
+  tip.innerHTML = `<b>${esc(d.k)}</b><div class="r"><i style="background:var(--crit)"></i>Receipt wrong: ${d.rw}</div>
+    <div class="r"><i style="background:var(--crit-2)"></i>Despatch wrong: ${d.dw}</div><div>${d.p}% of ${d.j} judged trains</div>`;
+  let x = e.clientX - b.left + 14, y = e.clientY - b.top + 12;
+  if (x + 220 > b.width) x = e.clientX - b.left - 230;
+  tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1;
+});
+box.addEventListener("mouseleave", () => tip.style.opacity = 0);
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => DAY && renderChart(DAY.rows.filter(qmatch)), 150); });
 document.getElementById("q").addEventListener("input", e => { Q = e.target.value.trim().toUpperCase(); if (DAY) render(); });
 init();
 </script>
