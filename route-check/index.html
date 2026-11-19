@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Interchange Route Check (MA4 vs RBS) | Delhi Division</title>
+<style>
+  :root {
+    --page: linear-gradient(160deg, #e8eef6 0%, #dde6f1 55%, #e9eef5 100%);
+    --header: linear-gradient(100deg, #0d2747 0%, #164277 100%);
+    --accent: #1f6fd1; --card: #ffffff; --card-head: #f5f8fc;
+    --ink: #0e1726; --ink-2: #44526a; --muted: #75839a; --border: #d6dfeb; --grid: #e9eef4;
+    --shadow: 0 1px 2px rgba(16,39,71,.06), 0 6px 18px rgba(16,39,71,.07);
+    --ok: #0a7a34; --ok-bg: #e3f4e9; --bad: #c62f2f; --bad-bg: #fde8e8; --na: #5b6475; --na-bg: #eef0f4;
+    --dli: #1650a0; --dli-bg: #e3efff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; color: var(--ink);
+         background: var(--page); min-height: 100vh; }
+  header { background: var(--header); color: #fff; padding: 16px 22px; }
+  header h1 { margin: 0; font-size: 19px; letter-spacing: .4px; }
+  header .sub { color: #b9cbe3; font-size: 12.5px; margin-top: 2px; }
+  main { max-width: 1380px; margin: 0 auto; padding: 16px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
+  .bar label { font-size: 13px; color: var(--ink-2); display: inline-flex; gap: 6px; align-items: center; }
+  select, .search { font: inherit; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--ink); }
+  .search { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+  .search input { border: 0; outline: 0; font: inherit; width: 170px; background: transparent; color: var(--ink); }
+  .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--card); }
+  .seg button { font: inherit; font-size: 13px; border: 0; background: transparent; padding: 6px 12px; cursor: pointer; color: var(--ink-2); }
+  .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
+  .asof { color: var(--ink-2); font-size: 13px; margin-left: auto; }
+
+  .kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .kgrp { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; }
+  .kgrp h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: #0d2747; }
+  .kgrp h3 .nm { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
+  .krow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .kt { border-radius: 8px; padding: 10px 12px; border: 1px solid var(--grid); background: var(--card-head); }
+  .kt .lab { font-size: 12px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
+  .kt .val { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: var(--ink); }
+  .kt .pct { font-size: 12px; color: var(--muted); }
+  .kt.ok { background: var(--ok-bg); border-color: #bfe3cc; } .kt.ok .lab { color: var(--ok); }
+  .kt.bad { background: var(--bad-bg); border-color: #f3c2c2; } .kt.bad .lab { color: var(--bad); }
+  .kt.na .lab { color: var(--na); }
+  .ico { width: 15px; height: 15px; flex: none; }
+
+  .sec-h { font-size: 15px; margin: 4px 2px 8px; color: #0d2747; letter-spacing: .3px; display: flex; gap: 10px; align-items: baseline; }
+  .sec-h .nm { font-weight: 500; color: var(--muted); font-size: 12.5px; }
+  .ic { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); margin-bottom: 10px; overflow: hidden; }
+  .ic > button.hd { all: unset; box-sizing: border-box; width: 100%; cursor: pointer; display: grid;
+                    grid-template-columns: 18px 170px 1fr 1fr; gap: 12px; align-items: center; padding: 11px 14px; }
+  .ic > button.hd:hover { background: #f7faff; }
+  .ic > button.hd:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .ic .car { transition: transform .15s; color: var(--muted); }
+  .ic.open .car { transform: rotate(90deg); }
+  .ic .nmx { font-weight: 700; font-size: 15px; }
+  .ic .nmx small { display: block; font-weight: 500; font-size: 11.5px; color: var(--muted); }
+  .sidebar { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .sidebar .sl { min-width: 64px; color: var(--muted); }
+  .meter { flex: 1; max-width: 260px; height: 10px; border-radius: 5px; background: var(--grid); display: flex; overflow: hidden; gap: 2px; }
+  .meter i { display: block; height: 100%; }
+  .meter i.r { background: #2f9e5b; border-radius: 5px 0 0 5px; } .meter i.w { background: #d64545; } .meter i.n { background: #b8c0cc; }
+  .cnt b.w { color: var(--bad); } .cnt b.r { color: var(--ok); }
+  .body { display: none; border-top: 1px solid var(--grid); padding: 6px 14px 12px; }
+  .ic.open .body { display: block; }
+  .body h4 { margin: 10px 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { padding: 7px 9px; border-bottom: 1px solid var(--grid); text-align: left; vertical-align: top; font-size: 13px; }
+  thead th { background: var(--card-head); font-size: 11.5px; color: var(--ink-2); font-weight: 600; white-space: nowrap; }
+  tbody tr { cursor: pointer; } tbody tr:hover td { background: #f4f8ff; }
+  tbody tr:focus-visible td { outline: 2px solid var(--accent); outline-offset: -2px; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .od { font-weight: 700; } .od small { font-weight: 500; color: var(--muted); }
+  .v { display: inline-flex; gap: 5px; align-items: center; border-radius: 4px; padding: 1px 7px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .v.RIGHT { background: var(--ok-bg); color: var(--ok); } .v.WRONG { background: var(--bad-bg); color: var(--bad); }
+  .v.NA { background: var(--na-bg); color: var(--na); }
+  .stn { font-weight: 700; } .muted { color: var(--muted); } .empty { padding: 18px; text-align: center; color: var(--muted); }
+  .note { font-size: 12px; color: var(--muted); margin: 6px 2px 0; }
+  footer { color: var(--muted); font-size: 11.5px; padding: 18px 4px; line-height: 1.6; }
+
+  #box { display: none; position: fixed; inset: 0; background: rgba(10,20,40,.45); z-index: 50; align-items: center; justify-content: center; padding: 14px; }
+  #box.on { display: flex; }
+  #box .in { background: #fff; border-radius: 12px; max-width: 980px; width: 100%; max-height: 90vh; overflow: auto; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  #box .top { padding: 14px 18px; border-bottom: 1px solid var(--grid); display: flex; gap: 12px; align-items: flex-start; }
+  #box .top h4 { margin: 0; font-size: 17px; } #box .top .nm { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  #box .top button { margin-left: auto; border: 0; background: none; font-size: 24px; line-height: 1; cursor: pointer; color: var(--muted); }
+  .cmp { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px 18px 4px; }
+  .cmp .bx { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+  .cmp .bx .lab { font-size: 11.5px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
+  .cmp .bx .big { font-size: 18px; font-weight: 700; margin-top: 3px; }
+  .cmp .bx .sm { font-size: 12.5px; color: var(--ink-2); margin-top: 2px; }
+  .cmp .bx.act { border-left: 4px solid #6a7a92; } .cmp .bx.exp { border-left: 4px solid var(--dli); }
+  .cmp .bx.wrong { background: #fff7f7; }
+  .strip-h { padding: 12px 18px 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-2); }
+  .strip { display: flex; overflow-x: auto; padding: 8px 18px 16px; gap: 0; align-items: stretch; }
+  .st { flex: none; min-width: 92px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 7px; background: #fff; text-align: center; position: relative; }
+  .st .c { font-weight: 700; font-size: 13.5px; } .st .n { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px; }
+  .st .d { font-size: 10.5px; margin-top: 3px; color: var(--muted); } .st .k { font-size: 10.5px; color: var(--muted); }
+  .st.dli { background: var(--dli-bg); border-color: #aac7ef; } .st.dli .d { color: var(--dli); font-weight: 600; }
+  .st.mark { box-shadow: 0 0 0 2px var(--dli); } .st.actual { box-shadow: 0 0 0 2px #c62f2f; }
+  .st .tag { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); font-size: 9.5px; font-weight: 700; border-radius: 3px; padding: 0 5px; white-space: nowrap; }
+  .st .tag.ic { background: #fff3d6; color: #8a4b00; } .st .tag.rbs { background: var(--dli); color: #fff; } .st .tag.act { background: #c62f2f; color: #fff; }
+  .lnk { flex: none; width: 16px; align-self: center; height: 2px; background: #b8c4d6; }
+  .lnk.bd { width: 26px; background: repeating-linear-gradient(90deg, #1650a0 0 4px, transparent 4px 7px); height: 3px; }
+  .extra { padding: 0 18px 16px; font-size: 12.5px; color: var(--ink-2); }
+  .extra div { margin-top: 4px; }
+
+  @media (max-width: 860px) {
+    .kpis { grid-template-columns: 1fr; } .krow { grid-template-columns: repeat(2, 1fr); }
+    .ic > button.hd { grid-template-columns: 18px 1fr; } .ic > button.hd .sidebar { grid-column: 2; }
+    .cmp { grid-template-columns: 1fr; } .asof { margin-left: 0; }
+    thead { display: none; } table, tbody, tr, td { display: block; width: 100%; }
+    tr { border-bottom: 6px solid var(--grid); padding: 4px 0; } td { border: 0; padding: 3px 10px; display: flex; gap: 10px; }
+    td::before { content: attr(data-l); min-width: 92px; color: var(--muted); font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>INTERCHANGE ROUTE CHECK &mdash; ACTUAL I/C vs RBS SHORTEST PATH</h1>
+  <div class="sub">Delhi Division, Northern Railway &middot; yesterday's actual interchange (FOIS MA4) &middot; correct entry / exit point from RBS ShortPath</div>
+</header>
+<main>
+  <div class="bar">
+    <label>Interchange date <select id="day" aria-label="Interchange date"></select></label>
+    <span class="seg" role="group" aria-label="Show">
+      <button type="button" data-f="WRONG" class="on">Wrong routed</button>
+      <button type="button" data-f="ALL">All trains</button>
+    </span>
+    <label class="search" title="Search station code or stock">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+      <input id="q" placeholder="From / To / stock" aria-label="Search station code or stock">
+    </label>
+    <span class="asof" id="asof">Loading&hellip;</span>
+  </div>
+
+  <section class="kpis" id="kpis" aria-label="Totals"></section>
+  <div class="sec-h">I/C POINT-WISE <span class="nm">click an I/C point, then a train for its route</span></div>
+  <div id="list"><div class="ic"><div class="empty">Loading&hellip;</div></div></div>
+
+  <footer>
+    <b>Right routed</b>: the train entered (receipt / taken over) or left (despatch / handed over) Delhi Division at the I/C point
+    where the RBS shortest path crosses the DLI boundary (or within 5 stations of it).
+    <b>Wrong routed</b>: the RBS path crosses DLI at another I/C point, or does not touch DLI at all.
+    <b>Not checked</b>: RBS did not accept a station code (sidings) or gave no path.<br>
+    RBS ShortPath gives the shortest chargeable route; a train diverted on authority (block, DFC, rationalised route) also shows as
+    differing from it. Source: FOIS MA4 train-wise interchange (previous day) and RBS ShortPath (rbs.indianrail.gov.in).
+  </footer>
+</main>
+
+<div id="box" role="dialog" aria-modal="true" aria-labelledby="bxt"><div class="in" id="bxin"></div></div>
+
+<script>
+// Goods Apps Script web app (foisanalyst) - public feed, leaves out loco numbers
+const FEED = "__GOODS_FEED_URL__";
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dLong = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ""); return m ? `${m[3]}-${MON[+m[2] - 1]}-${m[1]}` : esc(d); };
+const ICON = {
+  RIGHT: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  WRONG: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  NA: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>'
+};
+const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", NA: "Not checked" };
+const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
+let DATES = [], DAY = null, FILTER = "WRONG", Q = "", OPEN = new Set();
+
+async function getJSON(params) {
+  const r = await fetch(FEED + (FEED.includes("?") ? "&" : "?") + params, { cache: "no-store" });
+  return r.json();
+}
+
+async function init() {
+  if (FEED.startsWith("__")) { fail("Feed not set up yet."); return; }
+  try {
+    const d = await getJSON("feed=route_dates");
+    if (!d.ok || !d.dates.length) { fail("No route check published yet."); return; }
+    DATES = d.dates;
+    const want = new URLSearchParams(location.search).get("date");
+    const sel = document.getElementById("day");
+    sel.innerHTML = DATES.map(x => `<option value="${esc(x.date)}">${dLong(x.ic_date || x.date)}  (MA4 of ${dLong(x.date)})</option>`).join("");
+    if (want && DATES.some(x => x.date === want)) sel.value = want;
+    sel.onchange = () => load(sel.value);
+    await load(sel.value);
+  } catch (e) { fail("Could not load the data. Please refresh."); }
+}
+
+async function load(date) {
+  document.getElementById("asof").textContent = "Loading…";
+  const d = await getJSON("feed=route&date=" + encodeURIComponent(date));
+  if (!d.ok) { fail(d.error || "No data for this day."); return; }
+  DAY = d; OPEN.clear();
+  const u = new URL(location.href); u.searchParams.set("date", date); history.replaceState(null, "", u);
+  document.getElementById("asof").innerHTML = `Interchange of <b>${dLong(d.ic_date)}</b> &middot; ${d.rows.length} crossings`;
+  render();
+}
+
+function fail(msg) {
+  document.getElementById("asof").textContent = "";
+  document.getElementById("kpis").innerHTML = "";
+  document.getElementById("list").innerHTML = `<div class="ic"><div class="empty">${esc(msg)}</div></div>`;
+}
+
+const match = r => !Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q));
+const count = (rows, side) => {
+  const s = rows.filter(r => r.side === side);
+  return { tot: s.length, RIGHT: s.filter(r => r.cls === "RIGHT").length, WRONG: s.filter(r => r.cls === "WRONG").length,
+           NA: s.filter(r => r.cls === "NA").length };
+};
+const pct = (n, t) => t ? Math.round(n * 100 / t) + "%" : "–";
+
+function render() {
+  const rows = DAY.rows.filter(match);
+  // KPI tiles
+  document.getElementById("kpis").innerHTML = ["RECEIPT", "DESPATCH"].map(side => {
+    const c = count(rows, side), chk = c.RIGHT + c.WRONG;
+    return `<div class="kgrp"><h3>${side === "RECEIPT" ? "Receipt I/C" : "Despatch I/C"}<span class="nm">${side === "RECEIPT" ? "taken over by DLI" : "handed over by DLI"}</span></h3>
+      <div class="krow">
+        <div class="kt"><div class="lab">Total trains</div><div class="val">${c.tot}</div><div class="pct">crossings</div></div>
+        <div class="kt ok"><div class="lab">${ICON.RIGHT}Right routed</div><div class="val">${c.RIGHT}</div><div class="pct">${pct(c.RIGHT, chk)} of checked</div></div>
+        <div class="kt bad"><div class="lab">${ICON.WRONG}Wrong routed</div><div class="val">${c.WRONG}</div><div class="pct">${pct(c.WRONG, chk)} of checked</div></div>
+        <div class="kt na"><div class="lab">${ICON.NA}Not checked</div><div class="val">${c.NA}</div><div class="pct">RBS code / path n.a.</div></div>
+      </div></div>`;
+  }).join("");
+
+  // I/C point list - wrong-heavy points first
+  const pts = {};
+  rows.forEach(r => (pts[r.ic_point] ??= []).push(r));
+  const keys = Object.keys(pts).sort((a, b) => {
+    const wa = pts[a].filter(r => r.cls === "WRONG").length, wb = pts[b].filter(r => r.cls === "WRONG").length;
+    return wb - wa || a.localeCompare(b);
+  });
+  const list = document.getElementById("list");
+  if (!keys.length) { list.innerHTML = `<div class="ic"><div class="empty">Nothing matches the search.</div></div>`; return; }
+  list.innerHTML = keys.map(k => {
+    const rs = pts[k], stn = rs[0].ic_stn;
+    const side = s => {
+      const c = count(rs, s);
+      if (!c.tot) return `<div class="sidebar"><span class="sl">${s === "RECEIPT" ? "Receipt" : "Despatch"}</span><span class="muted">no trains</span></div>`;
+      const w = x => (x * 100 / c.tot).toFixed(1) + "%";
+      return `<div class="sidebar"><span class="sl">${s === "RECEIPT" ? "Receipt" : "Despatch"}</span>
+        <span class="meter" aria-hidden="true">${c.RIGHT ? `<i class="r" style="width:${w(c.RIGHT)}"></i>` : ""}${c.WRONG ? `<i class="w" style="width:${w(c.WRONG)}"></i>` : ""}${c.NA ? `<i class="n" style="width:${w(c.NA)}"></i>` : ""}</span>
+        <span class="cnt"><b class="w">${c.WRONG}</b> wrong / <b class="r">${c.RIGHT}</b> right${c.NA ? ` / ${c.NA} n.c.` : ""} of ${c.tot}</span></div>`;
+    };
+    const tbl = s => {
+      const sel = rs.filter(r => r.side === s && (FILTER === "ALL" || r.cls === "WRONG"))
+                    .sort((a, b) => (a.cls === "WRONG" ? 0 : 1) - (b.cls === "WRONG" ? 0 : 1) || String(a.time).localeCompare(String(b.time)));
+      if (!sel.length) return `<h4>${SIDE[s]}</h4><div class="empty" style="padding:8px">${FILTER === "WRONG" ? "No wrong-routed train." : "No train."}</div>`;
+      return `<h4>${SIDE[s]}</h4><table><thead><tr><th>Time</th><th>Divn</th><th>From &rarr; To</th><th>L/E</th><th>Stock</th><th class="num">Units</th>
+        <th>${s === "RECEIPT" ? "Actually entered at" : "Actually left at"}</th><th>As per RBS</th><th>Status</th></tr></thead><tbody>` +
+        sel.map(r => `<tr tabindex="0" data-i="${DAY.rows.indexOf(r)}">
+          <td data-l="Time"><b>${esc(r.time)}</b></td><td data-l="Divn">${esc(r.divn)}</td>
+          <td data-l="From → To" class="od">${esc(r.frm)} &rarr; ${esc(r.to)}</td><td data-l="L/E">${esc(r.le)}</td>
+          <td data-l="Stock">${esc(r.stock)}</td><td data-l="Units" class="num">${esc(r.units)}</td>
+          <td data-l="Actual"><span class="stn">${esc(r.ic_stn)}</span> <small class="muted">${esc(r.ic_point)}</small></td>
+          <td data-l="As per RBS">${expShort(r)}</td>
+          <td data-l="Status"><span class="v ${esc(r.cls)}">${ICON[r.cls] || ""}${VLAB[r.cls] || esc(r.verdict)}</span></td></tr>`).join("") +
+        `</tbody></table>`;
+    };
+    return `<div class="ic${OPEN.has(k) ? " open" : ""}" data-k="${esc(k)}">
+      <button type="button" class="hd" aria-expanded="${OPEN.has(k)}">
+        <svg class="ico car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M9 6l6 6-6 6"/></svg>
+        <span class="nmx">${esc(k)}<small>I/C station ${esc(stn)}</small></span>${side("RECEIPT")}${side("DESPATCH")}
+      </button><div class="body">${tbl("RECEIPT")}${tbl("DESPATCH")}</div></div>`;
+  }).join("");
+}
+
+function expStation(r) {
+  const p = r.path || {}, s = (p.rows || [])[p.mark];
+  return s ? { code: s[0], name: s[1] } : null;
+}
+function expShort(r) {
+  if (r.verdict === "NOT VIA DLI") return `<span class="muted">path does not touch DLI</span>`;
+  if (r.cls === "NA") return `<span class="muted">${esc(r.verdict)}</span>`;
+  const s = expStation(r);
+  return s ? `<span class="stn">${esc(s.code)}</span> <small class="muted">${esc(r.rbs_ic || "")}</small>` : `<span class="muted">–</span>`;
+}
+
+function strip(rows, mark, actualCode, label, rec) {
+  if (!rows || !rows.length) return "";
+  let h = `<div class="strip-h">${esc(label)}</div><div class="strip">`;
+  rows.forEach((s, i) => {
+    const [code, name, km, div, zone, ic] = s;
+    const dli = div === "DLI", isMark = i === mark, isAct = code === actualCode && !isMark;
+    const tag = isMark ? `<span class="tag rbs">RBS ${dli ? (rec ? "first DLI stn" : "last DLI stn") : "boundary"}</span>`
+              : isAct ? `<span class="tag act">actual I/C</span>` : ic ? `<span class="tag ic">I/C pt</span>` : "";
+    if (i) {
+      const bd = rows[i - 1][3] !== div;
+      h += `<span class="lnk${bd ? " bd" : ""}" title="${bd ? esc(rows[i - 1][3] + " → " + div) : ""}"></span>`;
+    }
+    h += `<div class="st${dli ? " dli" : ""}${isMark ? " mark" : ""}${code === actualCode ? " actual" : ""}">${tag}
+      <div class="c">${esc(code)}</div><div class="n" title="${esc(name)}">${esc(name)}</div>
+      <div class="d">${esc(div)} / ${esc(zone)}</div>${km ? `<div class="k">${esc(km)} km</div>` : ""}</div>`;
+  });
+  return h + `</div>`;
+}
+
+function openTrain(i) {
+  const r = DAY.rows[i]; if (!r) return;
+  const rec = r.side === "RECEIPT", s = expStation(r), p = r.path || {};
+  const wrong = r.cls === "WRONG";
+  let exp;
+  if (r.verdict === "NOT VIA DLI") {
+    exp = `<div class="big">Does not touch DLI Division</div><div class="sm">${esc(r.remarks)}</div>`;
+  } else if (r.cls === "NA") {
+    exp = `<div class="big">Not checked</div><div class="sm">${esc(r.verdict)} &middot; ${esc(r.remarks)}</div>`;
+  } else {
+    exp = `<div class="big">${s ? esc(s.code) + " <span class='muted' style='font-weight:500;font-size:13px'>" + esc(s.name) + "</span>" : "–"}</div>
+      <div class="sm">${rec ? "RBS path enters DLI" : "RBS path leaves DLI"}: ${esc(r.rbs_boundary)}</div>
+      ${r.rbs_ic ? `<div class="sm">I/C point: <b>${esc(r.rbs_ic)}</b></div>` : ""}`;
+  }
+  const html = `<div class="top"><div><h4 id="bxt">${esc(r.frm)} &rarr; ${esc(r.to)}
+      <span class="v ${esc(r.cls)}" style="margin-left:8px;vertical-align:2px">${ICON[r.cls] || ""}${VLAB[r.cls] || ""}</span></h4>
+      <div class="nm">${esc(SIDE[r.side])} &middot; ${esc(r.le === "L" ? "Loaded" : "Empty")} ${esc(r.stock)} &middot; ${esc(r.units)} &middot; Divn ${esc(r.divn)} &middot; interchange of ${dLong(DAY.ic_date)}</div></div>
+      <button type="button" aria-label="Close" onclick="closeBox()">&times;</button></div>
+    <div class="cmp">
+      <div class="bx act${wrong ? " wrong" : ""}"><div class="lab">${rec ? "Actually entered DLI at" : "Actually left DLI at"}</div>
+        <div class="big">${esc(r.ic_stn)} <span class="muted" style="font-weight:500;font-size:13px">${esc(r.ic_point)}</span></div>
+        <div class="sm">${rec ? "Taken over" : "Handed over"} at <b>${esc(r.time)} hrs</b></div>
+        ${r.pair ? `<div class="sm">${esc(r.pair)} hrs</div>` : ""}${r.pass_through ? `<div class="sm">Passed through: taken over and handed over at this I/C</div>` : ""}</div>
+      <div class="bx exp"><div class="lab">${rec ? "Should have entered DLI at (RBS)" : "Should have left DLI at (RBS)"}</div>${exp}</div>
+    </div>
+    ${strip(p.rows, p.mark, r.ic_stn, `RBS shortest path around the DLI ${rec ? "entry" : "exit"} (5 stations each side)`, rec)}
+    ${strip(p.nr_rows, p.nr_mark, r.ic_stn, `RBS shortest path around the NR zone ${rec ? "entry" : "exit"}`, rec)}
+    <div class="extra">${r.nr_boundary ? `<div>NR boundary on RBS path: ${esc(r.nr_boundary)}</div>` : ""}
+      ${r.remarks && r.verdict !== "NOT VIA DLI" ? `<div>${esc(r.remarks)}</div>` : ""}
+      <div class="muted">Blue = DLI Division stations &middot; dashed link = division boundary &middot; "I/C pt" = interchange point as per RBS</div></div>`;
+  document.getElementById("bxin").innerHTML = html;
+  document.getElementById("box").classList.add("on");
+  document.querySelectorAll("#box .strip").forEach(st => {       // bring the boundary station into view
+    const m = st.querySelector(".st.mark"); if (m) st.scrollLeft = m.offsetLeft - st.clientWidth / 2 + m.clientWidth / 2;
+  });
+  document.querySelector("#box button[aria-label=Close]").focus();
+}
+function closeBox() { document.getElementById("box").classList.remove("on"); }
+
+document.addEventListener("click", e => {
+  const hd = e.target.closest(".ic > button.hd");
+  if (hd) { const k = hd.parentElement.dataset.k; OPEN.has(k) ? OPEN.delete(k) : OPEN.add(k); render(); return; }
+  const tr = e.target.closest("tbody tr[data-i]"); if (tr) { openTrain(+tr.dataset.i); return; }
+  if (e.target.id === "box") closeBox();
+  const b = e.target.closest(".seg button");
+  if (b) { FILTER = b.dataset.f; document.querySelectorAll(".seg button").forEach(x => x.classList.toggle("on", x === b)); render(); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeBox();
+  if (e.key === "Enter") { const tr = e.target.closest && e.target.closest("tbody tr[data-i]"); if (tr) openTrain(+tr.dataset.i); }
+});
+document.getElementById("q").addEventListener("input", e => { Q = e.target.value.trim().toUpperCase(); if (DAY) render(); });
+init();
+</script>
+</body>
+</html>
