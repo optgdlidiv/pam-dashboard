@@ -36,7 +36,13 @@
   .kgrp { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); padding: 12px 14px; }
   .kgrp h3 { margin: 0 0 10px; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: #0d2747; }
   .kgrp h3 .nm { font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--muted); margin-left: 6px; }
-  .krow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .krow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .kt.dfc .lab { color: #6b4aa0; }
+  .v.DFC { background: #efe9fb; color: #5b3d94; } .meter i.d { background: #9b7fd1; }
+  .pat { background: var(--card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); margin-bottom: 18px; overflow: hidden; }
+  .pat table tbody tr.on td { background: #fff1f1; font-weight: 600; }
+  .pat .hint { font-size: 12px; color: var(--muted); padding: 8px 12px; border-top: 1px solid var(--grid); }
+  .pat .clr { font: inherit; font-size: 12px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 6px; padding: 2px 9px; cursor: pointer; margin-left: 8px; }
   .kt { border-radius: 8px; padding: 10px 12px; border: 1px solid var(--grid); background: var(--card-head); }
   .kt .lab { font-size: 12px; color: var(--ink-2); display: flex; gap: 6px; align-items: center; }
   .kt .val { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: var(--ink); }
@@ -109,6 +115,7 @@
 
   @media (max-width: 860px) {
     .kpis { grid-template-columns: 1fr; } .krow { grid-template-columns: repeat(2, 1fr); }
+    .tbl { overflow-x: auto; }
     .ic > button.hd { grid-template-columns: 18px 1fr; } .ic > button.hd .sidebar { grid-column: 2; }
     .cmp { grid-template-columns: 1fr; } .asof { margin-left: 0; }
     thead { display: none; } table, tbody, tr, td { display: block; width: 100%; }
@@ -137,6 +144,8 @@
   </div>
 
   <section class="kpis" id="kpis" aria-label="Totals"></section>
+  <div class="sec-h">WRONG ROUTED &mdash; BY PATTERN <span class="nm">actual I/C used vs I/C on the RBS shortest path; click a row to see its trains</span></div>
+  <div class="pat" id="pat"></div>
   <div class="sec-h">I/C POINT-WISE <span class="nm">click an I/C point, then a train for its route</span></div>
   <div id="list"><div class="ic"><div class="empty">Loading&hellip;</div></div></div>
 
@@ -144,6 +153,7 @@
     <b>Right routed</b>: the train entered (receipt / taken over) or left (despatch / handed over) Delhi Division at the I/C point
     where the RBS shortest path crosses the DLI boundary (or within 5 stations of it).
     <b>Wrong routed</b>: the RBS path crosses DLI at another I/C point, or does not touch DLI at all.
+    <b>Via DFC</b>: taken over from / handed over to WDFC or EDFC - RBS ShortPath does not cover the DFC, so these are not judged.
     <b>Not checked</b>: RBS did not accept a station code (sidings) or gave no path.<br>
     RBS ShortPath gives the shortest chargeable route; a train diverted on authority (block, DFC, rationalised route) also shows as
     differing from it. Source: FOIS MA4 train-wise interchange (previous day) and RBS ShortPath (rbs.indianrail.gov.in).
@@ -154,7 +164,7 @@
 
 <script>
 // Goods Apps Script web app (foisanalyst) - public feed, leaves out loco numbers
-const FEED = "__GOODS_FEED_URL__";
+const FEED = "https://script.google.com/macros/s/AKfycbzjUFJRcfvxFsRCadFd44LK7GbFtlbClQnUKtcAcVIYHYF9gy4ONWC0MH-H4ooVBl0I/exec";
 const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const dLong = d => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ""); return m ? `${m[3]}-${MON[+m[2] - 1]}-${m[1]}` : esc(d); };
@@ -163,7 +173,12 @@ const ICON = {
   WRONG: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   NA: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/><path d="M8 12h8"/></svg>'
 };
-const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", NA: "Not checked" };
+const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", DFC: "Via DFC", NA: "Not checked" };
+ICON.DFC = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 9h16M4 15h16M8 5v14M16 5v14"/></svg>';
+// RBS ShortPath has no DFC: a crossing at a WDFC / EDFC I/C point is shown apart, not as wrong routed
+const isDFC = r => /^(WDFC|EDFC)-/.test(r.ic_point || "");
+const patKey = r => `${r.side}|${r.ic_point}|${r.verdict === "NOT VIA DLI" ? "NOT VIA DLI" : (r.rbs_ic || r.rbs_boundary || "?")}`;
+let PAT = null, PAT_ALL = false;
 const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
 let DATES = [], DAY = null, FILTER = "WRONG", Q = "", OPEN = new Set();
 
@@ -191,7 +206,8 @@ async function load(date) {
   document.getElementById("asof").textContent = "Loading…";
   const d = await getJSON("feed=route&date=" + encodeURIComponent(date));
   if (!d.ok) { fail(d.error || "No data for this day."); return; }
-  DAY = d; OPEN.clear();
+  d.rows.forEach(r => { if (r.cls === "WRONG" && isDFC(r)) r.cls = "DFC"; });
+  DAY = d; OPEN.clear(); PAT = null;
   const u = new URL(location.href); u.searchParams.set("date", date); history.replaceState(null, "", u);
   document.getElementById("asof").innerHTML = `Interchange of <b>${dLong(d.ic_date)}</b> &middot; ${d.rows.length} crossings`;
   render();
@@ -203,11 +219,12 @@ function fail(msg) {
   document.getElementById("list").innerHTML = `<div class="ic"><div class="empty">${esc(msg)}</div></div>`;
 }
 
-const match = r => !Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q));
+const match = r => (!PAT || (r.cls === "WRONG" && patKey(r) === PAT)) &&
+  (!Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q)));
 const count = (rows, side) => {
   const s = rows.filter(r => r.side === side);
   return { tot: s.length, RIGHT: s.filter(r => r.cls === "RIGHT").length, WRONG: s.filter(r => r.cls === "WRONG").length,
-           NA: s.filter(r => r.cls === "NA").length };
+           DFC: s.filter(r => r.cls === "DFC").length, NA: s.filter(r => r.cls === "NA").length };
 };
 const pct = (n, t) => t ? Math.round(n * 100 / t) + "%" : "–";
 
@@ -221,10 +238,12 @@ function render() {
         <div class="kt"><div class="lab">Total trains</div><div class="val">${c.tot}</div><div class="pct">crossings</div></div>
         <div class="kt ok"><div class="lab">${ICON.RIGHT}Right routed</div><div class="val">${c.RIGHT}</div><div class="pct">${pct(c.RIGHT, chk)} of checked</div></div>
         <div class="kt bad"><div class="lab">${ICON.WRONG}Wrong routed</div><div class="val">${c.WRONG}</div><div class="pct">${pct(c.WRONG, chk)} of checked</div></div>
+        <div class="kt dfc"><div class="lab">${ICON.DFC}Via DFC</div><div class="val">${c.DFC}</div><div class="pct">DFC not in RBS</div></div>
         <div class="kt na"><div class="lab">${ICON.NA}Not checked</div><div class="val">${c.NA}</div><div class="pct">RBS code / path n.a.</div></div>
       </div></div>`;
   }).join("");
 
+  renderPatterns();
   // I/C point list - wrong-heavy points first
   const pts = {};
   rows.forEach(r => (pts[r.ic_point] ??= []).push(r));
@@ -241,11 +260,11 @@ function render() {
       if (!c.tot) return `<div class="sidebar"><span class="sl">${s === "RECEIPT" ? "Receipt" : "Despatch"}</span><span class="muted">no trains</span></div>`;
       const w = x => (x * 100 / c.tot).toFixed(1) + "%";
       return `<div class="sidebar"><span class="sl">${s === "RECEIPT" ? "Receipt" : "Despatch"}</span>
-        <span class="meter" aria-hidden="true">${c.RIGHT ? `<i class="r" style="width:${w(c.RIGHT)}"></i>` : ""}${c.WRONG ? `<i class="w" style="width:${w(c.WRONG)}"></i>` : ""}${c.NA ? `<i class="n" style="width:${w(c.NA)}"></i>` : ""}</span>
-        <span class="cnt"><b class="w">${c.WRONG}</b> wrong / <b class="r">${c.RIGHT}</b> right${c.NA ? ` / ${c.NA} n.c.` : ""} of ${c.tot}</span></div>`;
+        <span class="meter" aria-hidden="true">${c.RIGHT ? `<i class="r" style="width:${w(c.RIGHT)}"></i>` : ""}${c.WRONG ? `<i class="w" style="width:${w(c.WRONG)}"></i>` : ""}${c.DFC ? `<i class="d" style="width:${w(c.DFC)}"></i>` : ""}${c.NA ? `<i class="n" style="width:${w(c.NA)}"></i>` : ""}</span>
+        <span class="cnt"><b class="w">${c.WRONG}</b> wrong / <b class="r">${c.RIGHT}</b> right${c.DFC ? ` / ${c.DFC} DFC` : ""}${c.NA ? ` / ${c.NA} n.c.` : ""} of ${c.tot}</span></div>`;
     };
     const tbl = s => {
-      const sel = rs.filter(r => r.side === s && (FILTER === "ALL" || r.cls === "WRONG"))
+      const sel = rs.filter(r => r.side === s && (FILTER === "ALL" || PAT || r.cls === "WRONG"))
                     .sort((a, b) => (a.cls === "WRONG" ? 0 : 1) - (b.cls === "WRONG" ? 0 : 1) || String(a.time).localeCompare(String(b.time)));
       if (!sel.length) return `<h4>${SIDE[s]}</h4><div class="empty" style="padding:8px">${FILTER === "WRONG" ? "No wrong-routed train." : "No train."}</div>`;
       return `<h4>${SIDE[s]}</h4><table><thead><tr><th>Time</th><th>Divn</th><th>From &rarr; To</th><th>L/E</th><th>Stock</th><th class="num">Units</th>
@@ -265,6 +284,29 @@ function render() {
         <span class="nmx">${esc(k)}<small>I/C station ${esc(stn)}</small></span>${side("RECEIPT")}${side("DESPATCH")}
       </button><div class="body">${tbl("RECEIPT")}${tbl("DESPATCH")}</div></div>`;
   }).join("");
+}
+
+function renderPatterns() {
+  const all = DAY.rows.filter(r => r.cls === "WRONG" && (!Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q))));
+  const g = {};
+  all.forEach(r => { const k = patKey(r); (g[k] ??= []).push(r); });
+  const keysAll = Object.keys(g).sort((a, b) => g[b].length - g[a].length);
+  const keys = PAT_ALL ? keysAll : keysAll.slice(0, 12);
+  const el = document.getElementById("pat");
+  if (!keys.length) { el.innerHTML = `<div class="empty">No wrong-routed train.</div>`; return; }
+  const top = (rs, f, n) => { const c = {}; rs.forEach(r => { const v = f(r); c[v] = (c[v] || 0) + 1; });
+    return Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, n).map(([v, k]) => `${esc(v)} (${k})`).join(", "); };
+  el.innerHTML = `<div class="tbl"><table><thead><tr><th>Side</th><th>Actually used</th><th>RBS shortest path via</th>
+      <th class="num">Trains</th><th>Loaded / Empty</th><th>Main stock</th><th>Main From &rarr; To</th></tr></thead><tbody>` +
+    keys.map(k => { const rs = g[k], [side, act, rbs] = k.split("|"), L = rs.filter(r => r.le === "L").length;
+      return `<tr tabindex="0" data-p="${esc(k)}" class="${PAT === k ? "on" : ""}">
+        <td data-l="Side">${side === "RECEIPT" ? "Receipt" : "Despatch"}</td><td data-l="Actually used"><b>${esc(act)}</b></td>
+        <td data-l="RBS via"><b>${esc(rbs)}</b></td><td data-l="Trains" class="num"><b>${rs.length}</b></td>
+        <td data-l="L / E">${L} L / ${rs.length - L} E</td><td data-l="Stock">${top(rs, r => r.stock, 3)}</td>
+        <td data-l="From → To">${top(rs, r => r.frm + "→" + r.to, 3)}</td></tr>`; }).join("") +
+    `</tbody></table></div>` +
+    (keysAll.length > 12 ? `<div class="hint"><button type="button" class="clr" id="patmore" style="margin-left:0">${PAT_ALL ? "Show top 12 patterns" : `Show all ${keysAll.length} patterns`}</button></div>` : "") +
+    `<div class="hint">A pattern that is the normal route for these trains (block, rationalised route, line capacity) can be marked as accepted - tell the analyst.${PAT ? `<button type="button" class="clr" data-p="">Show all wrong-routed</button>` : ""}</div>`;
 }
 
 function expStation(r) {
@@ -339,6 +381,12 @@ function closeBox() { document.getElementById("box").classList.remove("on"); }
 document.addEventListener("click", e => {
   const hd = e.target.closest(".ic > button.hd");
   if (hd) { const k = hd.parentElement.dataset.k; OPEN.has(k) ? OPEN.delete(k) : OPEN.add(k); render(); return; }
+  if (e.target.id === "patmore") { PAT_ALL = !PAT_ALL; render(); return; }
+  const pr = e.target.closest("[data-p]");
+  if (pr) { const k = pr.dataset.p; PAT = (k && PAT !== k) ? k : null;
+    if (PAT) { const ic = PAT.split("|")[1]; OPEN.clear(); OPEN.add(ic); }
+    render(); if (PAT) document.querySelector(`.ic[data-k="${CSS.escape(PAT.split("|")[1])}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    return; }
   const tr = e.target.closest("tbody tr[data-i]"); if (tr) { openTrain(+tr.dataset.i); return; }
   if (e.target.id === "box") closeBox();
   const b = e.target.closest(".seg button");
@@ -346,7 +394,10 @@ document.addEventListener("click", e => {
 });
 document.addEventListener("keydown", e => {
   if (e.key === "Escape") closeBox();
-  if (e.key === "Enter") { const tr = e.target.closest && e.target.closest("tbody tr[data-i]"); if (tr) openTrain(+tr.dataset.i); }
+  if (e.key === "Enter" && e.target.closest) {
+    const tr = e.target.closest("tbody tr[data-i]"); if (tr) { openTrain(+tr.dataset.i); return; }
+    const pr = e.target.closest("tr[data-p]"); if (pr) pr.click();
+  }
 });
 document.getElementById("q").addEventListener("input", e => { Q = e.target.value.trim().toUpperCase(); if (DAY) render(); });
 init();
