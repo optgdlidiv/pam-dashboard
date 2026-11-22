@@ -36,6 +36,11 @@
   .search { display: flex; align-items: center; gap: 6px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 7px 11px; box-shadow: var(--shadow); }
   .search input { border: 0; outline: 0; font: inherit; width: 180px; background: transparent; color: var(--ink); }
   .asof { margin-left: auto; color: var(--ink-2); font-size: 13px; }
+  .share { display: flex; gap: 8px; }
+  .sbtn { font: inherit; font-size: 13px; display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border); background: var(--card);
+          color: var(--ink); border-radius: 9px; padding: 7px 12px; cursor: pointer; box-shadow: var(--shadow); }
+  .sbtn.tg { background: #229ed9; border-color: #229ed9; color: #fff; font-weight: 600; }
+  .sbtn:hover { filter: brightness(.96); }
   .ico { width: 15px; height: 15px; flex: none; }
   .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); }
   .ch { display: flex; align-items: baseline; gap: 10px; padding: 14px 18px 0; }
@@ -155,6 +160,7 @@
   .extra div { margin-top: 4px; }
 
   @media (max-width: 900px) {
+    .share { width: 100%; } .share .sbtn { flex: 1; justify-content: center; }
     .kpis { grid-template-columns: 1fr; } .knums { grid-template-columns: 1fr 1fr; }
     .hctl { margin-left: 0; width: 100%; } .hctl label, .hctl select { width: 100%; } .asof { margin-left: 0; width: 100%; }
     .cmp { grid-template-columns: 1fr; }
@@ -182,6 +188,11 @@
       <input id="q" placeholder="From / To / stock / I/C" aria-label="Search">
     </label>
     <span class="asof" id="asof">Loading&hellip;</span>
+    <span class="share">
+      <button type="button" class="sbtn tg" id="tgshare" title="Open Telegram with today's summary">
+        <svg class="ico" viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 4.3 2.9 11.5c-1 .4-1 1.6 0 1.9l4.6 1.5 1.8 5.5c.2.7 1.1.9 1.6.4l2.6-2.4 4.8 3.5c.6.4 1.4.1 1.6-.6l3-14.8c.2-.9-.6-1.6-1.4-1.2zM9.8 14.6l-.4 4-1.4-4.4 9.3-7.4-7.5 7.8z"/></svg>Share on Telegram</button>
+      <button type="button" class="sbtn" id="copysum">Copy summary</button>
+    </span>
   </div>
 
   <section class="kpis" id="kpis" aria-label="Receipt and despatch totals"></section>
@@ -401,6 +412,19 @@ function renderPatterns(rows) {
       <span>A pattern that is the normal route for these trains (block, rationalised route, line capacity) can be marked as accepted &ndash; tell the analyst.</span></div>`;
 }
 
+function summaryText() {
+  const rows = DAY.rows, line = side => { const c = count(rows, side), j = c.RIGHT + c.WRONG;
+    return `${side === "RECEIPT" ? "Receipt" : "Despatch"}: ${c.tot} trains - Right ${c.RIGHT}, Wrong ${c.WRONG} (${pct(c.WRONG, j)}%)${c.NA ? `, not checked ${c.NA}` : ""}`; };
+  const g = byIC(rows.filter(r => r.cls === "WRONG"));
+  const top = Object.keys(g).sort((a, b) => g[b].length - g[a].length).slice(0, 5)
+    .map(k => { const rc = g[k].filter(r => r.side === "RECEIPT").length; return `- ${k}: ${g[k].length} (Rcpt ${rc}, Desp ${g[k].length - rc})`; });
+  const u = new URL(location.href); u.search = ""; u.searchParams.set("date", DAY.date);
+  return [`Interchange Route Check - DLI Division`, `Interchange of ${dLong(DAY.ic_date).replace(/&\w+;/g, "")} (actual I/C vs RBS shortest path)`, "",
+          line("RECEIPT"), line("DESPATCH"), "", top.length ? "Most wrong-routed I/C points:" : "No wrong-routed train.", ...top, "",
+          `Details: ${u.toString()}`].join("\n");
+}
+function flash(btn, txt) { const o = btn.innerHTML; btn.textContent = txt; setTimeout(() => btn.innerHTML = o, 1600); }
+
 function selectIC(k, scroll) {
   SEL = SEL === k && !PAT ? null : k; render();
   if (SEL && scroll) document.getElementById("detail").scrollIntoView({ behavior: "smooth", block: "start" });
@@ -477,6 +501,11 @@ function closeBox() { document.getElementById("box").classList.remove("on"); }
 
 document.addEventListener("click", e => {
   if (e.target.id === "box") { closeBox(); return; }
+  const tg = e.target.closest("#tgshare");
+  if (tg) { if (!DAY) return; const t = summaryText(), lines = t.split("\n"), link = lines.pop().replace("Details: ", "");
+    window.open("https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(lines.join("\n").trim()), "_blank", "noopener"); return; }
+  const cp = e.target.closest("#copysum");
+  if (cp) { if (!DAY) return; navigator.clipboard.writeText(summaryText()).then(() => flash(cp, "Copied ✓"), () => flash(cp, "Copy failed")); return; }
   if (e.target.id === "dclose") { SEL = null; PAT = null; render(); return; }
   if (e.target.id === "patmore") { PAT_ALL = !PAT_ALL; render(); return; }
   const tile = e.target.closest(".tile"); if (tile) { PAT = null; selectIC(tile.dataset.k, true); return; }
