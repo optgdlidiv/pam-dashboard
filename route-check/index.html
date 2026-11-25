@@ -129,6 +129,11 @@
   .pat .tbl { padding: 8px 18px 4px; }
   .pat tbody tr.on td { background: #fff1f1; }
   .pat .bar { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--crit); vertical-align: middle; margin-right: 6px; }
+  .libbar { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 18px 0; }
+  .libbar .btn.on { background: var(--ink, #1f2a44); color: #fff; }
+  .lib td.ic { font-size: 12px; line-height: 1.45; }
+  .lib td.ic b { font-weight: 600; }
+  .lib .pw { display: inline-block; min-width: 38px; padding: 1px 6px; border-radius: 9px; font-weight: 600; font-size: 12px; text-align: center; }
   .pat .hint { font-size: 12px; color: var(--muted); padding: 8px 18px 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .btn { font: inherit; font-size: 12.5px; border: 1px solid var(--accent); color: var(--accent); background: #fff; border-radius: 7px; padding: 3px 10px; cursor: pointer; }
   footer { color: var(--muted); font-size: 11.5px; padding: 16px 2px 22px; line-height: 1.6; }
@@ -214,6 +219,16 @@
     <div id="pat"></div>
   </section>
 
+  <section class="card pat lib" aria-label="Regular routes">
+    <div class="ch"><h2>Regular routes &mdash; all days</h2><span class="nm" id="libnm">same FROM &rarr; TO pairs over every saved day &middot; RBS path kept, not asked again daily</span></div>
+    <div class="libbar">
+      <button type="button" class="btn on" data-lf="WRONG">With wrong-routed trains</button>
+      <button type="button" class="btn" data-lf="ALL">All pairs</button>
+      <button type="button" class="btn" data-lf="REG">Seen on 3+ days</button>
+    </div>
+    <div id="lib"><div class="empty">Loading&hellip;</div></div>
+  </section>
+
   <footer>
     <b>Right routed</b>: the train entered (receipt / taken over) or left (despatch / handed over) Delhi Division at the I/C point
     where the RBS shortest path crosses the DLI boundary (or within 5 stations of it).
@@ -242,6 +257,7 @@ const ICON = {
 const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", DFC: "Via DFC", NA: "Not checked" };
 const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
 const patKey = r => `${r.side}|${r.ic_point}|${r.verdict === "NOT VIA DLI" ? "NOT VIA DLI" : (r.rbs_ic || r.rbs_boundary || "?")}`;
+let LIB = null, LIBF = "WRONG", LIB_ALL = false;
 let DATES = [], DAY = null, FILTER = "WRONG", Q = "", SEL = null, PAT = null, PAT_ALL = false;
 
 async function getJSON(params) {
@@ -260,6 +276,7 @@ async function init() {
     if (want && DATES.some(x => x.date === want)) sel.value = want;
     sel.onchange = () => load(sel.value);
     await load(sel.value);
+    loadLib();
   } catch (e) { fail("Could not load the data. Please refresh."); }
 }
 
@@ -293,7 +310,7 @@ const sevOf = c => { const j = c.RIGHT + c.WRONG, p = j ? c.WRONG * 100 / j : 0;
 
 function render() {
   const rows = DAY.rows.filter(qmatch);
-  renderKpis(rows); renderChart(rows); renderTiles(rows); renderDetail(rows); renderPatterns(rows);
+  renderKpis(rows); renderChart(rows); renderTiles(rows); renderDetail(rows); renderPatterns(rows); renderLib();
 }
 
 function segs(c, cls) {
@@ -411,6 +428,48 @@ function renderPatterns(rows) {
       ${PAT ? `<button type="button" class="btn" data-p="">Clear pattern</button>` : ""}
       <span>A pattern that is the normal route for these trains (block, rationalised route, line capacity) can be marked as accepted &ndash; tell the analyst.</span></div>`;
 }
+
+async function loadLib() {
+  try {
+    const d = await getJSON("feed=route_library");
+    LIB = d.ok ? d.items : [];
+  } catch (e) { LIB = []; }
+  renderLib();
+}
+
+function renderLib() {
+  const el = document.getElementById("lib");
+  if (!LIB) return;
+  if (!LIB.length) { el.innerHTML = `<div class="empty">Route library not built yet.</div>`; return; }
+  const q = r => !Q || [r.frm, r.to, r.rcpt_act, r.desp_act, r.rcpt_rbs, r.desp_rbs].some(x => String(x || "").toUpperCase().includes(Q));
+  let rs = LIB.filter(q);
+  if (LIBF === "WRONG") rs = rs.filter(r => r.wrong > 0);
+  if (LIBF === "REG") rs = rs.filter(r => r.days >= 3);
+  if (LIBF === "WRONG") rs.sort((a, b) => b.wrong - a.wrong || b.trains - a.trains);
+  const tot = LIB.length, reg = LIB.filter(r => r.days >= 3).length, trains = LIB.reduce((a, r) => a + r.trains, 0);
+  document.getElementById("libnm").innerHTML = `${tot} FROM &rarr; TO pairs &middot; ${reg} seen on 3+ days &middot; ${trains} crossings &middot; RBS path kept, not asked again daily`;
+  const show = LIB_ALL ? rs : rs.slice(0, 15);
+  const ic = (act, rbs) => act ? `<b>${esc(act)}</b><br><span style="color:var(--muted)">RBS: ${esc(rbs || "-")}</span>` : `<span style="color:var(--muted)">-</span>`;
+  const pw = r => { const p = r.judged ? Math.round(r.wrong * 100 / r.judged) : null;
+    if (p === null) return `<span class="pw" style="background:#eef">n.c.</span>`;
+    const c = p >= 40 ? "var(--crit)" : p >= 20 ? "var(--serious)" : "var(--good)";
+    return `<span class="pw" style="background:${c};color:#fff">${p}%</span>`; };
+  el.innerHTML = !rs.length ? `<div class="empty">No pair matches.</div>` :
+    `<div class="tbl"><table><thead><tr><th>From &rarr; To</th><th class="num">Days</th><th class="num">Trains</th>
+      <th>Receipt: actually used</th><th>Despatch: actually used</th><th class="num">Wrong</th><th>Last seen</th></tr></thead><tbody>` +
+    show.map(r => `<tr><td><b>${esc(r.frm)} &rarr; ${esc(r.to)}</b></td><td class="num">${r.days}</td><td class="num">${r.trains}</td>
+      <td class="ic">${ic(r.rcpt_act, r.rcpt_rbs)}</td><td class="ic">${ic(r.desp_act, r.desp_rbs)}</td>
+      <td class="num">${r.wrong} ${pw(r)}</td><td>${dLong(r.last)}</td></tr>`).join("") +
+    `</tbody></table></div><div class="hint">${rs.length > 15 ? `<button type="button" class="btn" id="libmore">${LIB_ALL ? "Show top 15" : `Show all ${rs.length}`}</button>` : ""}
+      <span>Counts are over every day in the dropdown. "x3" = used by 3 trains. A pair that always takes the same non-RBS I/C is a candidate for an accepted route.</span></div>`;
+}
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-lf]");
+  if (b) { LIBF = b.dataset.lf; LIB_ALL = false;
+    document.querySelectorAll("[data-lf]").forEach(x => x.classList.toggle("on", x === b)); renderLib(); return; }
+  if (e.target.id === "libmore") { LIB_ALL = !LIB_ALL; renderLib(); }
+});
 
 function summaryText() {
   const rows = DAY.rows, line = side => { const c = count(rows, side), j = c.RIGHT + c.WRONG;
