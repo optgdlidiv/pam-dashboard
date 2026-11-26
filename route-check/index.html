@@ -34,6 +34,9 @@
   .seg button { font: inherit; font-size: 13px; border: 0; background: transparent; padding: 7px 14px; cursor: pointer; color: var(--ink-2); }
   .seg button.on { background: var(--accent); color: #fff; font-weight: 600; }
   .search { display: flex; align-items: center; gap: 6px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 7px 11px; box-shadow: var(--shadow); }
+  .fsel { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 4px 6px 4px 11px; box-shadow: var(--shadow); }
+  .fsel select { font: inherit; font-size: 13px; color: var(--ink); border: 0; background: transparent; padding: 3px 2px; cursor: pointer; max-width: 170px; }
+  .fsel.on { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
   .search input { border: 0; outline: 0; font: inherit; width: 180px; background: transparent; color: var(--ink); }
   .asof { margin-left: auto; color: var(--ink-2); font-size: 13px; }
   .share { display: flex; gap: 8px; }
@@ -183,6 +186,10 @@
     <span class="seg" role="group" aria-label="Show trains">
       <button type="button" data-f="WRONG" class="on">Wrong routed</button><button type="button" data-f="ALL">All trains</button>
     </span>
+    <label class="fsel" title="Show one I/C point only"><span>I/C point</span>
+      <select id="fic" aria-label="I/C point"><option value="">All I/C points</option></select></label>
+    <label class="fsel" title="Loaded or empty trains"><span>Loaded / Empty</span>
+      <select id="fle" aria-label="Loaded or empty"><option value="">All</option><option value="L">Loaded</option><option value="E">Empty</option></select></label>
     <label class="search" title="Search station code or stock">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
       <input id="q" placeholder="From / To / stock / I/C" aria-label="Search">
@@ -242,6 +249,7 @@ const ICON = {
 const VLAB = { RIGHT: "Right routed", WRONG: "Wrong routed", DFC: "Via DFC", NA: "Not checked" };
 const SIDE = { RECEIPT: "Receipt (taken over)", DESPATCH: "Despatch (handed over)" };
 const patKey = r => `${r.side}|${r.ic_point}|${r.verdict === "NOT VIA DLI" ? "NOT VIA DLI" : (r.rbs_ic || r.rbs_boundary || "?")}`;
+let ICF = "", LEF = "";
 let DATES = [], DAY = null, FILTER = "WRONG", Q = "", SEL = null, PAT = null, PAT_ALL = false;
 
 async function getJSON(params) {
@@ -254,7 +262,9 @@ async function init() {
     const d = await getJSON("feed=route_dates");
     if (!d.ok || !d.dates.length) { fail("No route check published yet."); return; }
     DATES = d.dates;
-    const want = new URLSearchParams(location.search).get("date");
+    const sp = new URLSearchParams(location.search), want = sp.get("date");
+    ICF = sp.get("ic") || ""; LEF = ["L", "E"].includes(sp.get("le")) ? sp.get("le") : "";
+    document.getElementById("fle").value = LEF;
     const sel = document.getElementById("day");
     sel.innerHTML = DATES.map(x => `<option value="${esc(x.date)}">${dLong(x.ic_date || x.date)}  &middot;  MA4 of ${dLong(x.date)}</option>`).join("");
     if (want && DATES.some(x => x.date === want)) sel.value = want;
@@ -267,7 +277,8 @@ async function load(date) {
   document.getElementById("asof").textContent = "Loading…";
   const d = await getJSON("feed=route&date=" + encodeURIComponent(date));
   if (!d.ok) { fail(d.error || "No data for this day."); return; }
-  DAY = d; SEL = null; PAT = null;
+  DAY = d; SEL = ICF || null; PAT = null;
+  fillIC(); SEL = ICF || null;
   const u = new URL(location.href); u.searchParams.set("date", date); history.replaceState(null, "", u);
   document.getElementById("asof").innerHTML = `Interchange of <b>${dLong(d.ic_date)}</b> &middot; ${d.rows.length} crossings`;
   render();
@@ -280,6 +291,23 @@ function fail(msg) {
   document.getElementById("tiles").innerHTML = `<div class="empty" style="grid-column:1/-1">${esc(msg)}</div>`;
 }
 
+const vis = r => (!ICF || r.ic_point === ICF) && (!LEF || r.le === LEF) && qmatch(r);
+const LEL = { L: "Loaded", E: "Empty" };
+function fillIC() {
+  const el = document.getElementById("fic"), ics = [...new Set(DAY.rows.map(r => r.ic_point))].sort();
+  if (ICF && !ics.includes(ICF)) ICF = "";
+  el.innerHTML = `<option value="">All I/C points</option>` + ics.map(k => `<option value="${esc(k)}">${esc(k)}</option>`).join("");
+  el.value = ICF;
+  syncFilters();
+}
+function syncFilters() {
+  document.getElementById("fic").closest(".fsel").classList.toggle("on", !!ICF);
+  document.getElementById("fle").closest(".fsel").classList.toggle("on", !!LEF);
+  const u = new URL(location.href);
+  ICF ? u.searchParams.set("ic", ICF) : u.searchParams.delete("ic");
+  LEF ? u.searchParams.set("le", LEF) : u.searchParams.delete("le");
+  history.replaceState(null, "", u);
+}
 const qmatch = r => !Q || [r.frm, r.to, r.stock, r.ic_point, r.ic_stn].some(x => String(x || "").toUpperCase().includes(Q));
 const count = (rows, side) => {
   const s = side ? rows.filter(r => r.side === side) : rows;
@@ -292,7 +320,9 @@ const sevOf = c => { const j = c.RIGHT + c.WRONG, p = j ? c.WRONG * 100 / j : 0;
   return p >= 40 ? ["hi", "High", "var(--crit)"] : p >= 20 ? ["md", "Medium", "var(--serious)"] : ["lo", "Low", "var(--good)"]; };
 
 function render() {
-  const rows = DAY.rows.filter(qmatch);
+  const rows = DAY.rows.filter(vis), f = ICF || LEF;
+  document.getElementById("asof").innerHTML = `Interchange of <b>${dLong(DAY.ic_date)}</b> &middot; ` +
+    (f ? `<b>${rows.length}</b> of ${DAY.rows.length} crossings shown` : `${DAY.rows.length} crossings`);
   renderKpis(rows); renderChart(rows); renderTiles(rows); renderDetail(rows); renderPatterns(rows);
 }
 
@@ -413,13 +443,16 @@ function renderPatterns(rows) {
 }
 
 function summaryText() {
-  const rows = DAY.rows, line = side => { const c = count(rows, side), j = c.RIGHT + c.WRONG;
+  const rows = DAY.rows.filter(r => (!ICF || r.ic_point === ICF) && (!LEF || r.le === LEF)), line = side => { const c = count(rows, side), j = c.RIGHT + c.WRONG;
     return `${side === "RECEIPT" ? "Receipt" : "Despatch"}: ${c.tot} trains - Right ${c.RIGHT}, Wrong ${c.WRONG} (${pct(c.WRONG, j)}%)${c.NA ? `, not checked ${c.NA}` : ""}`; };
   const g = byIC(rows.filter(r => r.cls === "WRONG"));
   const top = Object.keys(g).sort((a, b) => g[b].length - g[a].length).slice(0, 5)
     .map(k => { const rc = g[k].filter(r => r.side === "RECEIPT").length; return `- ${k}: ${g[k].length} (Rcpt ${rc}, Desp ${g[k].length - rc})`; });
   const u = new URL(location.href); u.search = ""; u.searchParams.set("date", DAY.date);
-  return [`Interchange Route Check - DLI Division`, `Interchange of ${dLong(DAY.ic_date).replace(/&\w+;/g, "")} (actual I/C vs RBS shortest path)`, "",
+  if (ICF) u.searchParams.set("ic", ICF);
+  if (LEF) u.searchParams.set("le", LEF);
+  const only = [ICF && `I/C ${ICF}`, LEF && `${LEL[LEF]} trains`].filter(Boolean).join(", ");
+  return [`Interchange Route Check - DLI Division`, `Interchange of ${dLong(DAY.ic_date).replace(/&\w+;/g, "")} (actual I/C vs RBS shortest path)`, ...(only ? [`Only: ${only}`] : []), "",
           line("RECEIPT"), line("DESPATCH"), "", top.length ? "Most wrong-routed I/C points:" : "No wrong-routed train.", ...top, "",
           `Details: ${u.toString()}`].join("\n");
 }
@@ -537,7 +570,11 @@ box.addEventListener("mousemove", e => {
   tip.style.left = x + "px"; tip.style.top = y + "px"; tip.style.opacity = 1;
 });
 box.addEventListener("mouseleave", () => tip.style.opacity = 0);
-let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => DAY && renderChart(DAY.rows.filter(qmatch)), 150); });
+let rz; window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => DAY && renderChart(DAY.rows.filter(vis)), 150); });
+document.getElementById("fic").addEventListener("change", e => {
+  ICF = e.target.value; SEL = ICF || null; PAT = null; syncFilters(); if (DAY) render(); });
+document.getElementById("fle").addEventListener("change", e => {
+  LEF = e.target.value; PAT = null; syncFilters(); if (DAY) render(); });
 document.getElementById("q").addEventListener("input", e => { Q = e.target.value.trim().toUpperCase(); if (DAY) render(); });
 init();
 </script>
